@@ -28,6 +28,10 @@ class QoETelemetrySentinel {
       stallsCount: 0,
       totalStallDurationMs: 0,
       stallStartTime: null,
+      lastStallDurationMs: 0,
+      recoveryCount: 0,
+      adaptationCount: 0,
+      mosScore: 5.0,
       isUserSeeking: false,
       history: []
     };
@@ -83,6 +87,7 @@ class QoETelemetrySentinel {
 
     // Shaka adaptation event
     this.player.addEventListener('adaptation', () => {
+      this.state.adaptationCount++;
       this.collectTelemetrySample();
     });
 
@@ -152,6 +157,8 @@ class QoETelemetrySentinel {
     if (this.state.stallStartTime) {
       const stallDuration = performance.now() - this.state.stallStartTime;
       this.state.totalStallDurationMs += stallDuration;
+      this.state.lastStallDurationMs = Math.round(stallDuration);
+      this.state.recoveryCount++;
       this.state.stallStartTime = null;
     }
   }
@@ -241,6 +248,9 @@ class QoETelemetrySentinel {
         : 0;
     }
 
+    // Calculate ITU-T P.1203 inspired MOS QoE Score
+    this.state.mosScore = this.calculateMosScore();
+
     // Record historical snapshot for time-series / reporting
     const snapshot = this.getSnapshot();
     this.state.history.push({
@@ -254,6 +264,37 @@ class QoETelemetrySentinel {
     }
 
     this.updateUI();
+  }
+
+  calculateMosScore() {
+    if (!this.state.firstFrameRendered && this.state.ttffMs === null) {
+      return 5.0;
+    }
+
+    // 1. Base video quality from bitrate (logarithmic saturation model)
+    // 4000 kbps -> ~4.85, 2000 kbps -> ~4.5, 1000 kbps -> ~4.0, 500 kbps -> ~3.3, 200 kbps -> ~2.4
+    const bitrate = Math.max(100, this.state.currentBitrateKbps || 800);
+    let baseScore = 1.0 + 3.85 * (1 - Math.exp(-bitrate / 1100));
+
+    // 2. Startup delay penalty (TTFF)
+    // SLA target: < 3500 ms. If <= 2500ms, 0 penalty. Above that, gradual penalty up to 0.8
+    let ttffPenalty = 0;
+    if (this.state.ttffMs && this.state.ttffMs > 2500) {
+      ttffPenalty = Math.min(0.8, ((this.state.ttffMs - 2500) / 4000) * 0.8);
+    }
+
+    // 3. Rebuffering / Stall Penalty (ITU-T P.1203 heavily penalizes stalls)
+    const stallSec = this.state.totalStallDurationMs / 1000;
+    const stallPenalty = Math.min(3.0, (this.state.stallsCount * 0.45) + (stallSec * 0.25));
+
+    // 4. Adaptation oscillation penalty
+    const adaptationPenalty = Math.min(0.4, (this.state.adaptationCount || 0) * 0.04);
+
+    // 5. Dropped frames penalty
+    const dropPenalty = Math.min(0.5, (this.state.dropRatioPercent || 0) * 0.1);
+
+    const mos = baseScore - ttffPenalty - stallPenalty - adaptationPenalty - dropPenalty;
+    return parseFloat(Math.max(1.0, Math.min(5.0, mos)).toFixed(2));
   }
 
   getSnapshot() {
@@ -271,6 +312,10 @@ class QoETelemetrySentinel {
       resolution: this.state.resolution,
       stallsCount: this.state.stallsCount,
       totalStallDurationSec: parseFloat((this.state.totalStallDurationMs / 1000).toFixed(2)),
+      lastStallDurationMs: this.state.lastStallDurationMs,
+      recoveryCount: this.state.recoveryCount,
+      adaptationCount: this.state.adaptationCount,
+      mosScore: this.state.mosScore,
       currentTimeSec: parseFloat(this.videoElement.currentTime.toFixed(2)),
       durationSec: parseFloat((this.videoElement.duration || 0).toFixed(2))
     };
@@ -288,7 +333,11 @@ class QoETelemetrySentinel {
       }
     };
 
+    const mos = s.mosScore;
+    const mosClass = mos >= 4.0 ? 'good' : (mos >= 3.0 ? 'warn' : 'crit');
+
     updateEl('hud-state', s.playbackState, s.playbackState === 'PLAYING' ? 'good' : (s.playbackState === 'BUFFERING' ? 'crit' : 'warn'));
+    updateEl('hud-mos', `${mos.toFixed(2)} / 5.0`, mosClass);
     updateEl('hud-ttff', s.ttffMs ? `${s.ttffMs} ms` : 'Measuring...', s.ttffMs && s.ttffMs < 3000 ? 'good' : 'highlight');
     updateEl('hud-bitrate', `${s.currentBitrateKbps.toLocaleString()} kbps`, 'highlight');
     updateEl('hud-bandwidth', `${(s.estimatedBandwidthKbps / 1000).toFixed(2)} Mbps`);
@@ -323,6 +372,12 @@ class QoETelemetrySentinel {
 
     const cardDropped = document.getElementById('card-dropped');
     if (cardDropped) cardDropped.textContent = `${s.dropRatioPercent}%`;
+
+    const cardMos = document.getElementById('card-mos');
+    if (cardMos) {
+      cardMos.textContent = `${mos.toFixed(2)}`;
+      cardMos.className = `kpi-card-value ${mosClass}`;
+    }
   }
 
   toggleHud() {

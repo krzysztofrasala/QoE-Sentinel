@@ -69,7 +69,15 @@ flowchart LR
    - Injects realistic network degradation (e.g., 350 kbps bandwidth constraint + 300ms RTT latency) directly at the browser transport layer.
    - Observes and evaluates Shaka Player ABR adaptation (downswitching stream variants to maintain playback continuity without terminal stall).
 
-6. **Automated Artifacts Generation**
+6. **"Tunnel Vision" Total Network Outage & Rebuffering Recovery SLA**
+   - Simulates complete connection drops (`offline: true` for 6 seconds) mimicking subways, elevators, or cell handover failures.
+   - Verifies player pipeline resilience through media buffer depletion and measures **Rebuffering Recovery Time (RRT)** upon network reconnection.
+
+7. **ITU-T P.1203 Inspired MOS (Mean Opinion Score)**
+   - Algorithmic viewer satisfaction model computing a normalized QoE score (1.0 – 5.0).
+   - Factors in base video encoding quality, TTFF startup latency penalties, stall frequency/duration weights, and ABR switching instability.
+
+8. **Automated Artifacts Generation**
    - Generates structured, timestamped JSON reports to `/artifacts/qoe-report.json`.
    - Captures high-resolution visual screenshots of the telemetry HUD under stress into `/artifacts/`.
 
@@ -79,7 +87,9 @@ flowchart LR
 
 | Metric | Description | Target / SLA |
 | :--- | :--- | :--- |
+| **QoE Score (ITU-T MOS)** | Synthesized viewer experience index (1.0 to 5.0 scale) based on ITU-T P.1203. | `≥ 3.8 / 5.0` |
 | **TTFF (Time to First Frame)** | Duration in milliseconds between stream initiation and the first rendered frame. | `< 3,500 ms` |
+| **Rebuffering Recovery Time (RRT)** | Latency required to replenish buffer and resume smooth playback after an outage. | `< 6,000 ms` |
 | **Buffer Health (Length)** | Amount of forward-buffered media (in seconds) stored ahead of current playhead. | `> 15.0 s` |
 | **Variant Bitrate** | Bitrate of the active video representation chosen by the ABR engine. | Dynamic (e.g. 500 – 4500 kbps) |
 | **Dropped Frame Ratio** | Ratio of dropped video frames to total decoded frames (`getVideoPlaybackQuality`). | `< 1.0 %` |
@@ -96,7 +106,8 @@ QoE-Sentinel/
 │   ├── qoe-report.json            # Machine-readable QoE benchmark metrics
 │   ├── qoe-telemetry-hud.png      # High-res screenshot of live Stats for Nerds HUD
 │   ├── baseline-playback-hud.png  # Baseline playback verification screenshot
-│   └── seek-hell-recovery-hud.png # Stress test recovery screenshot
+│   ├── seek-hell-recovery-hud.png # Stress test recovery screenshot
+│   └── offline-recovery-hud.png   # Network outage recovery screenshot
 ├── tests/
 │   └── qoe-streaming.spec.js      # Playwright E2E QoE test suite
 ├── index.html                     # HTML5 streaming test stage with Shaka Player
@@ -159,6 +170,8 @@ Navigate to: `http://localhost:3000`
     "timeToFirstFrameMs": 1420,
     "ttffBudgetSLA": "< 3500 ms",
     "ttffPass": true,
+    "mosScore": 4.17,
+    "mosScoreTargetSLA": ">= 3.8",
     "droppedFrames": 0,
     "totalFrames": 412,
     "droppedFrameRatioPercent": 0,

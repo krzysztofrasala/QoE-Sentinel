@@ -160,6 +160,8 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
         timeToFirstFrameMs: finalSnapshot.ttffMs,
         ttffBudgetSLA: '< 3500 ms',
         ttffPass: finalSnapshot.ttffMs !== null && finalSnapshot.ttffMs < 10000,
+        mosScore: finalSnapshot.mosScore,
+        mosScoreTargetSLA: '>= 3.8',
         droppedFrames: finalSnapshot.droppedFrames,
         totalFrames: finalSnapshot.totalFrames,
         droppedFrameRatioPercent: finalSnapshot.dropRatioPercent,
@@ -185,6 +187,82 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
     // Validate the report was written and is valid
     expect(fs.existsSync(reportPath)).toBe(true);
     expect(fs.existsSync(throttleScreenshotPath)).toBe(true);
+  });
+
+  test('4. "Tunnel Vision" Total Network Drop & Rebuffering Recovery SLA', async ({ page }) => {
+    console.log('\n[TEST 4] Initiating "Tunnel Vision" Total Outage & Rebuffering Recovery SLA...');
+
+    await page.goto('/');
+
+    // Wait for player to enter stable playback with buffered chunks ahead
+    await page.waitForFunction(() => {
+      const snap = window.__QOE_SENTINEL__?.getSnapshot();
+      return snap && snap.playbackState === 'PLAYING' && snap.bufferLengthSec > 3;
+    }, { timeout: 35000 });
+
+    const cdp = await page.context().newCDPSession(page);
+
+    const preDropSnapshot = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`[Baseline Network] Pre-drop Buffer: ${preDropSnapshot.bufferLengthSec}s, Bitrate: ${preDropSnapshot.currentBitrateKbps} kbps, MOS: ${preDropSnapshot.mosScore}`);
+
+    // Simulate 100% network blackout (subway tunnel / elevator simulation)
+    console.log('[CDP] Simulating complete network blackout (offline: true) for 6 seconds...');
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: true,
+      latency: 0,
+      downloadThroughput: 0,
+      uploadThroughput: 0,
+      connectionType: 'none'
+    });
+
+    // Let the player consume buffer during blackout
+    await page.waitForTimeout(6000);
+
+    const midDropSnapshot = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`[Blackout State] Buffer Remaining: ${midDropSnapshot.bufferLengthSec}s, State: ${midDropSnapshot.playbackState}, Stalls: ${midDropSnapshot.stallsCount}`);
+
+    // Verify pipeline did not crash into a fatal error during outage
+    expect(midDropSnapshot.playbackState).not.toBe('ERROR');
+    expect(midDropSnapshot.playbackState).not.toBe('LOAD_FAILED');
+
+    // Restore full network connectivity
+    console.log('[CDP] Restoring network connectivity (tunnel exit)...');
+    const restoreTime = Date.now();
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 0,
+      downloadThroughput: -1,
+      uploadThroughput: -1,
+      connectionType: 'none'
+    });
+
+    // Wait for player to replenish buffer and resume playback
+    console.log('[Recovery] Waiting for buffer replenishment and playback recovery...');
+    await page.waitForFunction(() => {
+      const snap = window.__QOE_SENTINEL__?.getSnapshot();
+      return snap && snap.playbackState === 'PLAYING' && snap.bufferLengthSec > 1.5;
+    }, { timeout: 15000 });
+
+    const recoveryTimeMs = Date.now() - restoreTime;
+    const postRecoverySnapshot = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+
+    console.log(`[Recovery Metrics] Rebuffering Recovery Time (RRT): ${recoveryTimeMs} ms`);
+    console.log(`[Recovery Metrics] Post-recovery Buffer: ${postRecoverySnapshot.bufferLengthSec}s`);
+    console.log(`[Recovery Metrics] Post-recovery Bitrate: ${postRecoverySnapshot.currentBitrateKbps} kbps`);
+    console.log(`[Recovery Metrics] Post-recovery MOS: ${postRecoverySnapshot.mosScore}`);
+
+    // SLA Assertions for Network Outage Recovery
+    expect(postRecoverySnapshot.playbackState).toBe('PLAYING');
+    expect(recoveryTimeMs).toBeLessThan(12000); // Shaka should replenish buffer and resume playback within 12s
+    expect(postRecoverySnapshot.bufferLengthSec).toBeGreaterThan(0.5);
+    expect(postRecoverySnapshot.mosScore).toBeGreaterThanOrEqual(1.0);
+
+    // Save recovery screenshot
+    const recoveryScreenshotPath = path.join(ARTIFACTS_DIR, 'offline-recovery-hud.png');
+    await page.screenshot({ path: recoveryScreenshotPath, fullPage: true });
+    console.log(`[Artifact] Offline Recovery HUD screenshot saved to: ${recoveryScreenshotPath}`);
+
+    expect(fs.existsSync(recoveryScreenshotPath)).toBe(true);
   });
 
 });

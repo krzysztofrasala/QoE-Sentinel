@@ -361,6 +361,18 @@ video#video-player {
   color: #fff;
 }
 
+.kpi-card-value.good {
+  color: var(--status-healthy);
+}
+
+.kpi-card-value.warn {
+  color: var(--status-warning);
+}
+
+.kpi-card-value.crit {
+  color: var(--status-critical);
+}
+
 .kpi-card-subtitle {
   font-size: 11px;
   color: var(--text-muted);

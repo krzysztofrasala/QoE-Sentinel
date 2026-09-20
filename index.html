@@ -53,6 +53,10 @@
             <span class="hud-val highlight" id="hud-state">INITIALIZING</span>
           </div>
           <div class="hud-row">
+            <span class="hud-label">QoE Score (MOS):</span>
+            <span class="hud-val good" id="hud-mos">5.00 / 5.0</span>
+          </div>
+          <div class="hud-row">
             <span class="hud-label">Time to 1st Frame (TTFF):</span>
             <span class="hud-val" id="hud-ttff">Measuring...</span>
           </div>
@@ -142,6 +146,15 @@
         </div>
         <div class="kpi-card-value" id="card-dropped">0.0%</div>
         <div class="kpi-card-subtitle">Renderer smoothness SLA: &lt; 1.0%</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span>QoE SCORE (ITU-T MOS)</span>
+          <span>⭐</span>
+        </div>
+        <div class="kpi-card-value good" id="card-mos">5.00</div>
+        <div class="kpi-card-subtitle">ITU-T P.1203 model • SLA: &ge; 3.8</div>
       </div>
 
     </section>
