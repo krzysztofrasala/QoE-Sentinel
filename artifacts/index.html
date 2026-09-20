@@ -1,57 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
-const ARTIFACTS_DIR = path.join(__dirname, '..', 'artifacts');
-const REPORT_PATH = path.join(ARTIFACTS_DIR, 'qoe-report.json');
-const DASHBOARD_PATH = path.join(ARTIFACTS_DIR, 'dashboard.html');
-const PAGES_INDEX_PATH = path.join(ARTIFACTS_DIR, 'index.html');
-
-function generateDashboard() {
-  if (!fs.existsSync(REPORT_PATH)) {
-    console.error(`[Error] Benchmark report not found at ${REPORT_PATH}. Run 'npm test' first.`);
-    process.exit(1);
-  }
-
-  const reportRaw = fs.readFileSync(REPORT_PATH, 'utf8');
-  const report = JSON.parse(reportRaw);
-
-  const summary = report.qoeMetricsSummary || {};
-  const stress = report.stressTestResults || {};
-  const samples = report.timeSeriesTelemetrySamples || [];
-
-  // Prepare chart time-series data
-  const startTime = samples.length > 0 ? samples[0].timestamp : Date.now();
-  const labels = samples.map((s, idx) => {
-    const elapsedSec = Math.round((s.timestamp - startTime) / 1000);
-    return `${elapsedSec}s`;
-  });
-
-  const bitrates = samples.map(s => s.currentBitrateKbps || 0);
-  const bandwidths = samples.map(s => s.estimatedBandwidthKbps || 0);
-  const buffers = samples.map(s => s.bufferLengthSec || 0);
-  const mosScores = samples.map(s => s.mosScore || 5.0);
-  const states = samples.map(s => s.playbackState || 'PLAYING');
-
-  // Compute peak and min buffer
-  const peakBuffer = buffers.length > 0 ? Math.max(...buffers) : 0;
-  const minBuffer = buffers.length > 0 ? Math.min(...buffers) : 0;
-
-  // Determine overall MOS classification
-  const finalMos = summary.mosScore || 4.2;
-  let mosClass = 'good';
-  let mosRating = 'EXCELLENT';
-  if (finalMos >= 4.0) {
-    mosClass = 'good';
-    mosRating = 'EXCELLENT';
-  } else if (finalMos >= 3.0) {
-    mosClass = 'warn';
-    mosRating = 'FAIR / ACCEPTABLE';
-  } else {
-    mosClass = 'crit';
-    mosRating = 'CRITICAL / DEGRADED';
-  }
-
-  const htmlContent = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -471,8 +418,8 @@ function generateDashboard() {
         <h1 class="dashboard-title">QoE-Sentinel <span>// Telemetry Analytics</span></h1>
       </div>
       <div class="header-meta">
-        <div>Platform: <strong>${report.environment.browser || 'Chromium CDP'}</strong></div>
-        <div>Timestamp: <strong>${new Date(report.testRunTimestamp).toLocaleTimeString()}</strong></div>
+        <div>Platform: <strong>Chromium (Playwright CDP)</strong></div>
+        <div>Timestamp: <strong>11:16:22 PM</strong></div>
         <div class="verdict-badge">✔ ALL 4 SLAs PASSED</div>
       </div>
     </header>
@@ -485,8 +432,8 @@ function generateDashboard() {
           <span>QoE SCORE (ITU-T MOS)</span>
           <span>⭐</span>
         </div>
-        <div class="kpi-value ${mosClass}">${finalMos.toFixed(2)} <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
-        <div class="kpi-subtext">Rating: <strong>${mosRating}</strong> (SLA &ge; 3.8)</div>
+        <div class="kpi-value good">4.15 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
+        <div class="kpi-subtext">Rating: <strong>EXCELLENT</strong> (SLA &ge; 3.8)</div>
       </div>
 
       <div class="kpi-card accent-cyan">
@@ -494,7 +441,7 @@ function generateDashboard() {
           <span>STARTUP LATENCY (TTFF)</span>
           <span>⚡</span>
         </div>
-        <div class="kpi-value good">${summary.timeToFirstFrameMs || 0} <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
+        <div class="kpi-value good">244 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
         <div class="kpi-subtext">Initial frame decoded within budget (&lt; 3,500ms)</div>
       </div>
 
@@ -503,7 +450,7 @@ function generateDashboard() {
           <span>ABR THROTTLING ADAPTATION</span>
           <span>📉</span>
         </div>
-        <div class="kpi-value">${stress.preThrottleBitrateKbps || 0} &rarr; ${stress.postThrottleBitrateKbps || 0} <span style="font-size: 14px; color: var(--text-muted);">kbps</span></div>
+        <div class="kpi-value">14932 &rarr; 254 <span style="font-size: 14px; color: var(--text-muted);">kbps</span></div>
         <div class="kpi-subtext">Automated downswitch under 350 kbps constraint</div>
       </div>
 
@@ -512,8 +459,8 @@ function generateDashboard() {
           <span>BUFFER DEPTH RANGE</span>
           <span>🛡️</span>
         </div>
-        <div class="kpi-value good">${minBuffer.toFixed(1)}s &ndash; ${peakBuffer.toFixed(1)}s</div>
-        <div class="kpi-subtext">Final forward buffer: <strong>${(summary.finalBufferLengthSec || 0).toFixed(1)}s</strong></div>
+        <div class="kpi-value good">0.0s &ndash; 12.0s</div>
+        <div class="kpi-subtext">Final forward buffer: <strong>10.9s</strong></div>
       </div>
 
       <div class="kpi-card accent-red">
@@ -521,8 +468,8 @@ function generateDashboard() {
           <span>REBUFFERING INTERRUPTIONS</span>
           <span>⚠️</span>
         </div>
-        <div class="kpi-value ${summary.stallsCount === 0 ? 'good' : 'warn'}">${summary.stallsCount || 0} <span style="font-size: 14px; color: var(--text-muted);">stalls</span></div>
-        <div class="kpi-subtext">Cumulative stall freeze: <strong>${summary.totalStallDurationSec || 0}s</strong></div>
+        <div class="kpi-value warn">1 <span style="font-size: 14px; color: var(--text-muted);">stalls</span></div>
+        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.18s</strong></div>
       </div>
 
     </section>
@@ -611,7 +558,7 @@ function generateDashboard() {
     <!-- Raw Telemetry Table -->
     <section class="table-section">
       <div class="section-title">
-        <span>📋 Time-Series Telemetry Samples (${samples.length} Collected Samples)</span>
+        <span>📋 Time-Series Telemetry Samples (17 Collected Samples)</span>
       </div>
       <div class="table-responsive">
         <table>
@@ -629,19 +576,211 @@ function generateDashboard() {
             </tr>
           </thead>
           <tbody>
-            ${samples.map((s, idx) => `
+            
               <tr>
-                <td>${labels[idx]}</td>
-                <td><span class="status-tag ${s.playbackState}">${s.playbackState}</span></td>
-                <td><strong>${(s.currentBitrateKbps || 0).toLocaleString()}</strong> kbps</td>
-                <td>${((s.estimatedBandwidthKbps || 0) / 1000).toFixed(2)} Mbps</td>
-                <td>${s.resolution || 'N/A'}</td>
-                <td>${(s.bufferLengthSec || 0).toFixed(1)}s</td>
-                <td>${s.droppedFrames || 0} / ${s.totalFrames || 0} (${s.dropRatioPercent || 0}%)</td>
-                <td>${s.stallsCount || 0} (${s.totalStallDurationSec || 0}s)</td>
-                <td><strong>${(s.mosScore || 5.0).toFixed(2)}</strong></td>
+                <td>0s</td>
+                <td><span class="status-tag LOADING">LOADING</span></td>
+                <td><strong>4,953</strong> kbps</td>
+                <td>9.00 Mbps</td>
+                <td>1280x720</td>
+                <td>0.0s</td>
+                <td>0 / 0 (0%)</td>
+                <td>0 (0s)</td>
+                <td><strong>5.00</strong></td>
               </tr>
-            `).join('')}
+            
+              <tr>
+                <td>0s</td>
+                <td><span class="status-tag BUFFERING">BUFFERING</span></td>
+                <td><strong>14,932</strong> kbps</td>
+                <td>44.25 Mbps</td>
+                <td>3840x2160</td>
+                <td>0.0s</td>
+                <td>0 / 0 (0%)</td>
+                <td>1 (0s)</td>
+                <td><strong>5.00</strong></td>
+              </tr>
+            
+              <tr>
+                <td>1s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>14,932</strong> kbps</td>
+                <td>106.35 Mbps</td>
+                <td>3840x2160</td>
+                <td>11.0s</td>
+                <td>0 / 33 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>4.28</strong></td>
+              </tr>
+            
+              <tr>
+                <td>1s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 33 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>2s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>10.0s</td>
+                <td>0 / 63 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>3s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>9.0s</td>
+                <td>0 / 93 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>4s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>8.0s</td>
+                <td>0 / 123 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>5s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 153 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>6s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>10.0s</td>
+                <td>0 / 183 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>7s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.19 Mbps</td>
+                <td>320x180</td>
+                <td>9.0s</td>
+                <td>0 / 213 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>8s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.23 Mbps</td>
+                <td>320x180</td>
+                <td>8.0s</td>
+                <td>0 / 243 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>9s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.23 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 273 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>10s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.20 Mbps</td>
+                <td>320x180</td>
+                <td>10.0s</td>
+                <td>0 / 303 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>11s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.20 Mbps</td>
+                <td>320x180</td>
+                <td>9.0s</td>
+                <td>0 / 333 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>12s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.21 Mbps</td>
+                <td>320x180</td>
+                <td>12.0s</td>
+                <td>0 / 363 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>13s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.18 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 393 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>13s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>4,953</strong> kbps</td>
+                <td>9.00 Mbps</td>
+                <td>1280x720</td>
+                <td>10.9s</td>
+                <td>0 / 398 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>4.15</strong></td>
+              </tr>
+            
           </tbody>
         </table>
       </div>
@@ -661,11 +800,11 @@ function generateDashboard() {
     new Chart(ctxAbr, {
       type: 'line',
       data: {
-        labels: ${JSON.stringify(labels)},
+        labels: ["0s","0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
         datasets: [
           {
             label: 'Stream Bitrate (kbps)',
-            data: ${JSON.stringify(bitrates)},
+            data: [4953,14932,14932,254,254,254,254,254,254,254,254,254,254,254,254,254,4953],
             borderColor: '#00d2ff',
             backgroundColor: 'rgba(0, 210, 255, 0.1)',
             borderWidth: 2.5,
@@ -676,7 +815,7 @@ function generateDashboard() {
           },
           {
             label: 'Est. Bandwidth (kbps)',
-            data: ${JSON.stringify(bandwidths)},
+            data: [9000,44253,106354,300,300,300,300,300,300,188,229,233,204,197,211,184,9000],
             borderColor: '#ffab00',
             borderWidth: 1.8,
             borderDash: [5, 5],
@@ -723,11 +862,11 @@ function generateDashboard() {
     new Chart(ctxBuffer, {
       type: 'line',
       data: {
-        labels: ${JSON.stringify(labels)},
+        labels: ["0s","0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
         datasets: [
           {
             label: 'Buffer Length (sec)',
-            data: ${JSON.stringify(buffers)},
+            data: [0,0,11.04,11.03,10.04,9.04,8.04,11.04,10.04,9.04,8.04,11.04,10.04,9.04,12.04,11.04,10.89],
             borderColor: '#00e676',
             backgroundColor: 'rgba(0, 230, 118, 0.15)',
             borderWidth: 2,
@@ -738,7 +877,7 @@ function generateDashboard() {
           },
           {
             label: 'QoE MOS Score (1-5)',
-            data: ${JSON.stringify(mosScores)},
+            data: [5,5,4.28,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,4.15],
             borderColor: '#d946ef',
             borderWidth: 2.5,
             fill: false,
@@ -806,15 +945,3 @@ function generateDashboard() {
   </script>
 </body>
 </html>
-`;
-
-  fs.writeFileSync(DASHBOARD_PATH, htmlContent, 'utf8');
-  fs.writeFileSync(PAGES_INDEX_PATH, htmlContent, 'utf8');
-  console.log(`[Dashboard] Interactive QoE Analytics Dashboard compiled to: ${DASHBOARD_PATH}`);
-}
-
-if (require.main === module) {
-  generateDashboard();
-}
-
-module.exports = { generateDashboard };

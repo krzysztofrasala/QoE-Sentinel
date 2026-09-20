@@ -1,5 +1,7 @@
 # 🎬 QoE-Sentinel: Autonomous Video Streaming QoE Test Framework
 
+[![QoE Benchmark CI](https://github.com/krzysztofrasala/QoE-Sentinel/actions/workflows/qoe-pipeline.yml/badge.svg)](https://github.com/krzysztofrasala/QoE-Sentinel/actions/workflows/qoe-pipeline.yml)
+[![Live Dashboard](https://img.shields.io/badge/Live_Dashboard-GitHub_Pages-success?logo=github)](https://krzysztofrasala.github.io/QoE-Sentinel/)
 [![Engine](https://img.shields.io/badge/Player-Google%20Shaka%20v4.x-red)](https://github.com/shaka-project/shaka-player)
 [![Automation](https://img.shields.io/badge/Automation-Playwright%20%2B%20CDP-blue)](https://playwright.dev/)
 [![Protocol](https://img.shields.io/badge/Streaming-MPEG--DASH-orange)](https://dashif.org/)
@@ -198,6 +200,16 @@ Navigate to: `http://localhost:3000`
   }
 }
 ```
+
+---
+
+## 🌐 Continuous Integration & Cloud Dashboard (GitHub Actions)
+
+This repository features an automated CI/CD pipeline defined in [`.github/workflows/qoe-pipeline.yml`](.github/workflows/qoe-pipeline.yml):
+1. **Automated Headless Benchmarking**: Every pull request or push to `main` spins up a cloud Ubuntu runner with headless Chromium to execute all 4 QoE SLA tests.
+2. **Automated Artifact Archival**: Test runs upload raw JSON metrics and full Playwright traces as 14-day persistent build artifacts.
+3. **Automated GitHub Pages Deployment**: The compiled standalone analytics dashboard (`dashboard.html`) is deployed to **GitHub Pages**:
+   - 🔗 **Live Analytics Dashboard**: [https://krzysztofrasala.github.io/QoE-Sentinel/](https://krzysztofrasala.github.io/QoE-Sentinel/)
 
 ---
 
