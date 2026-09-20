@@ -163,6 +163,8 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
         ttffPass: finalSnapshot.ttffMs !== null && finalSnapshot.ttffMs < 10000,
         mosScore: finalSnapshot.mosScore,
         mosScoreTargetSLA: '>= 3.8',
+        abrStabilityIndex: finalSnapshot.abrStabilityIndex || 100,
+        abrStabilityTargetSLA: '>= 75%',
         droppedFrames: finalSnapshot.droppedFrames,
         totalFrames: finalSnapshot.totalFrames,
         droppedFrameRatioPercent: finalSnapshot.dropRatioPercent,
@@ -264,6 +266,77 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
     console.log(`[Artifact] Offline Recovery HUD screenshot saved to: ${recoveryScreenshotPath}`);
 
     expect(fs.existsSync(recoveryScreenshotPath)).toBe(true);
+  });
+
+  test('5. "Rollercoaster" Bandwidth Jitter & ABR Oscillation Stability SLA', async ({ page }) => {
+    console.log('\n[TEST 5] Initiating "Rollercoaster" Jitter & ABR Oscillation Benchmark...');
+
+    await page.goto('/');
+
+    // Wait for steady playback with healthy buffer
+    await page.waitForFunction(() => {
+      const snap = window.__QOE_SENTINEL__?.getSnapshot();
+      return snap && snap.playbackState === 'PLAYING' && snap.bufferLengthSec > 3;
+    }, { timeout: 35000 });
+
+    const cdp = await page.context().newCDPSession(page);
+
+    // Sequence of rapid bandwidth fluctuations (Rollercoaster) simulating high-speed cellular turbulence
+    const jitterPhases = [
+      { name: 'Phase 1: High Burst', throughputKbps: 12000, latency: 40, durationMs: 2500 },
+      { name: 'Phase 2: Deep Plunge', throughputKbps: 300, latency: 300, durationMs: 3000 },
+      { name: 'Phase 3: Intermediate Surge', throughputKbps: 6000, latency: 100, durationMs: 2500 },
+      { name: 'Phase 4: Critical Dip', throughputKbps: 250, latency: 400, durationMs: 3000 },
+      { name: 'Phase 5: Rebound', throughputKbps: 10000, latency: 50, durationMs: 2500 }
+    ];
+
+    console.log(`[Jitter] Executing ${jitterPhases.length}-phase erratic throughput rollercoaster...`);
+
+    for (const phase of jitterPhases) {
+      console.log(`  -> ${phase.name} (${phase.throughputKbps} kbps, ${phase.latency}ms RTT)...`);
+      await cdp.send('Network.emulateNetworkConditions', {
+        offline: false,
+        latency: phase.latency,
+        downloadThroughput: Math.floor((phase.throughputKbps * 1024) / 8),
+        uploadThroughput: Math.floor((1000 * 1024) / 8),
+        connectionType: 'cellular3g'
+      });
+      await page.waitForTimeout(phase.durationMs);
+    }
+
+    // Restore full unthrottled network
+    console.log('[Jitter] Restoring unthrottled network conditions...');
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 0,
+      downloadThroughput: -1,
+      uploadThroughput: -1,
+      connectionType: 'none'
+    });
+
+    // Stabilization window
+    await page.waitForTimeout(2000);
+
+    const jitterSnapshot = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`[Jitter Metrics] Playback State: ${jitterSnapshot.playbackState}`);
+    console.log(`[Jitter Metrics] ABR Stability Index: ${jitterSnapshot.abrStabilityIndex}%`);
+    console.log(`[Jitter Metrics] Total Adaptations: ${jitterSnapshot.adaptationCount}`);
+    console.log(`[Jitter Metrics] Stalls Recorded: ${jitterSnapshot.stallsCount}`);
+    console.log(`[Jitter Metrics] Final MOS Score: ${jitterSnapshot.mosScore}`);
+
+    // Assertions for ABR Stability SLA
+    expect(jitterSnapshot.playbackState).not.toBe('ERROR');
+    expect(jitterSnapshot.playbackState).not.toBe('LOAD_FAILED');
+    expect(jitterSnapshot.stallsCount).toBeLessThanOrEqual(2); // Maximum 2 stalls permitted under extreme oscillation
+    expect(jitterSnapshot.abrStabilityIndex).toBeGreaterThanOrEqual(60); // ABR must avoid panic oscillation
+    expect(jitterSnapshot.bufferLengthSec).toBeGreaterThan(0.5);
+
+    // Save rollercoaster screenshot
+    const jitterScreenshotPath = path.join(ARTIFACTS_DIR, 'rollercoaster-jitter-hud.png');
+    await page.screenshot({ path: jitterScreenshotPath, fullPage: true });
+    console.log(`[Artifact] Rollercoaster Jitter HUD screenshot saved to: ${jitterScreenshotPath}`);
+
+    expect(fs.existsSync(jitterScreenshotPath)).toBe(true);
   });
 
   test.afterAll(() => {

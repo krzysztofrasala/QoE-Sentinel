@@ -419,8 +419,8 @@
       </div>
       <div class="header-meta">
         <div>Platform: <strong>Chromium (Playwright CDP)</strong></div>
-        <div>Timestamp: <strong>11:16:22 PM</strong></div>
-        <div class="verdict-badge">✔ ALL 4 SLAs PASSED</div>
+        <div>Timestamp: <strong>12:54:17 AM</strong></div>
+        <div class="verdict-badge">✔ ALL 5 SLAs PASSED</div>
       </div>
     </header>
 
@@ -432,7 +432,7 @@
           <span>QoE SCORE (ITU-T MOS)</span>
           <span>⭐</span>
         </div>
-        <div class="kpi-value good">4.15 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
+        <div class="kpi-value good">4.29 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
         <div class="kpi-subtext">Rating: <strong>EXCELLENT</strong> (SLA &ge; 3.8)</div>
       </div>
 
@@ -441,7 +441,7 @@
           <span>STARTUP LATENCY (TTFF)</span>
           <span>⚡</span>
         </div>
-        <div class="kpi-value good">244 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
+        <div class="kpi-value good">190 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
         <div class="kpi-subtext">Initial frame decoded within budget (&lt; 3,500ms)</div>
       </div>
 
@@ -452,6 +452,15 @@
         </div>
         <div class="kpi-value">14932 &rarr; 254 <span style="font-size: 14px; color: var(--text-muted);">kbps</span></div>
         <div class="kpi-subtext">Automated downswitch under 350 kbps constraint</div>
+      </div>
+
+      <div class="kpi-card accent-cyan">
+        <div class="kpi-label">
+          <span>ABR STABILITY INDEX</span>
+          <span>🎯</span>
+        </div>
+        <div class="kpi-value good">100%</div>
+        <div class="kpi-subtext">Hysteresis against oscillation (SLA &ge; 75%)</div>
       </div>
 
       <div class="kpi-card accent-green">
@@ -469,7 +478,7 @@
           <span>⚠️</span>
         </div>
         <div class="kpi-value warn">1 <span style="font-size: 14px; color: var(--text-muted);">stalls</span></div>
-        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.18s</strong></div>
+        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.13s</strong></div>
       </div>
 
     </section>
@@ -519,6 +528,16 @@
           <div class="gallery-card-body">
             <div class="gallery-card-title">CDP Network Throttling HUD</div>
             <div class="gallery-card-desc">Telemetry under 350 kbps + 300ms RTT network choke</div>
+          </div>
+        </div>
+
+        <div class="gallery-card" onclick="openModal('rollercoaster-jitter-hud.png')">
+          <div class="gallery-img-container">
+            <img src="rollercoaster-jitter-hud.png" alt="Rollercoaster Bandwidth Jitter HUD">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Rollercoaster Jitter & Hysteresis</div>
+            <div class="gallery-card-desc">ABR stability under rapid mobile network turbulence</div>
           </div>
         </div>
 
@@ -593,7 +612,7 @@
                 <td>0s</td>
                 <td><span class="status-tag BUFFERING">BUFFERING</span></td>
                 <td><strong>14,932</strong> kbps</td>
-                <td>44.25 Mbps</td>
+                <td>72.15 Mbps</td>
                 <td>3840x2160</td>
                 <td>0.0s</td>
                 <td>0 / 0 (0%)</td>
@@ -605,12 +624,12 @@
                 <td>1s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>14,932</strong> kbps</td>
-                <td>106.35 Mbps</td>
+                <td>117.88 Mbps</td>
                 <td>3840x2160</td>
-                <td>11.0s</td>
+                <td>3.0s</td>
                 <td>0 / 33 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>4.28</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>4.33</strong></td>
               </tr>
             
               <tr>
@@ -619,10 +638,10 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>11.0s</td>
+                <td>3.0s</td>
                 <td>0 / 33 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -631,10 +650,10 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>10.0s</td>
+                <td>6.1s</td>
                 <td>0 / 63 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -645,8 +664,8 @@
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 93 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -657,56 +676,56 @@
                 <td>320x180</td>
                 <td>8.0s</td>
                 <td>0 / 123 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>5s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.30 Mbps</td>
+                <td>0.23 Mbps</td>
                 <td>320x180</td>
-                <td>11.0s</td>
+                <td>7.0s</td>
                 <td>0 / 153 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>6s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.30 Mbps</td>
+                <td>0.24 Mbps</td>
                 <td>320x180</td>
                 <td>10.0s</td>
                 <td>0 / 183 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>7s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.19 Mbps</td>
+                <td>0.23 Mbps</td>
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 213 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>8s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.23 Mbps</td>
+                <td>0.19 Mbps</td>
                 <td>320x180</td>
                 <td>8.0s</td>
                 <td>0 / 243 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -717,20 +736,20 @@
                 <td>320x180</td>
                 <td>11.0s</td>
                 <td>0 / 273 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>10s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.20 Mbps</td>
+                <td>0.23 Mbps</td>
                 <td>320x180</td>
                 <td>10.0s</td>
                 <td>0 / 303 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -741,32 +760,32 @@
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 333 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>12s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.21 Mbps</td>
+                <td>0.20 Mbps</td>
                 <td>320x180</td>
                 <td>12.0s</td>
                 <td>0 / 363 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>13s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.18 Mbps</td>
+                <td>0.21 Mbps</td>
                 <td>320x180</td>
                 <td>11.0s</td>
                 <td>0 / 393 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>1.18</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -777,8 +796,8 @@
                 <td>1280x720</td>
                 <td>10.9s</td>
                 <td>0 / 398 (0%)</td>
-                <td>1 (0.18s)</td>
-                <td><strong>4.15</strong></td>
+                <td>1 (0.13s)</td>
+                <td><strong>4.29</strong></td>
               </tr>
             
           </tbody>
@@ -815,7 +834,7 @@
           },
           {
             label: 'Est. Bandwidth (kbps)',
-            data: [9000,44253,106354,300,300,300,300,300,300,188,229,233,204,197,211,184,9000],
+            data: [9000,72146,117875,300,300,300,300,234,245,231,189,227,231,204,202,215,9000],
             borderColor: '#ffab00',
             borderWidth: 1.8,
             borderDash: [5, 5],
@@ -866,7 +885,7 @@
         datasets: [
           {
             label: 'Buffer Length (sec)',
-            data: [0,0,11.04,11.03,10.04,9.04,8.04,11.04,10.04,9.04,8.04,11.04,10.04,9.04,12.04,11.04,10.89],
+            data: [0,0,3.05,3.04,6.06,9.04,8.04,7.04,10.04,9.04,8.04,11.04,10.04,9.04,12.04,11.04,10.88],
             borderColor: '#00e676',
             backgroundColor: 'rgba(0, 230, 118, 0.15)',
             borderWidth: 2,
@@ -877,7 +896,7 @@
           },
           {
             label: 'QoE MOS Score (1-5)',
-            data: [5,5,4.28,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,4.15],
+            data: [5,5,4.33,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,4.29],
             borderColor: '#d946ef',
             borderWidth: 2.5,
             fill: false,

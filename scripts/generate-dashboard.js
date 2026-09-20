@@ -473,7 +473,7 @@ function generateDashboard() {
       <div class="header-meta">
         <div>Platform: <strong>${report.environment.browser || 'Chromium CDP'}</strong></div>
         <div>Timestamp: <strong>${new Date(report.testRunTimestamp).toLocaleTimeString()}</strong></div>
-        <div class="verdict-badge">✔ ALL 4 SLAs PASSED</div>
+        <div class="verdict-badge">✔ ALL 5 SLAs PASSED</div>
       </div>
     </header>
 
@@ -505,6 +505,15 @@ function generateDashboard() {
         </div>
         <div class="kpi-value">${stress.preThrottleBitrateKbps || 0} &rarr; ${stress.postThrottleBitrateKbps || 0} <span style="font-size: 14px; color: var(--text-muted);">kbps</span></div>
         <div class="kpi-subtext">Automated downswitch under 350 kbps constraint</div>
+      </div>
+
+      <div class="kpi-card accent-cyan">
+        <div class="kpi-label">
+          <span>ABR STABILITY INDEX</span>
+          <span>🎯</span>
+        </div>
+        <div class="kpi-value ${(summary.abrStabilityIndex || 100) >= 75 ? 'good' : 'warn'}">${summary.abrStabilityIndex || 100}%</div>
+        <div class="kpi-subtext">Hysteresis against oscillation (SLA &ge; 75%)</div>
       </div>
 
       <div class="kpi-card accent-green">
@@ -572,6 +581,16 @@ function generateDashboard() {
           <div class="gallery-card-body">
             <div class="gallery-card-title">CDP Network Throttling HUD</div>
             <div class="gallery-card-desc">Telemetry under 350 kbps + 300ms RTT network choke</div>
+          </div>
+        </div>
+
+        <div class="gallery-card" onclick="openModal('rollercoaster-jitter-hud.png')">
+          <div class="gallery-img-container">
+            <img src="rollercoaster-jitter-hud.png" alt="Rollercoaster Bandwidth Jitter HUD">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Rollercoaster Jitter & Hysteresis</div>
+            <div class="gallery-card-desc">ABR stability under rapid mobile network turbulence</div>
           </div>
         </div>
 

@@ -31,6 +31,8 @@ class QoETelemetrySentinel {
       lastStallDurationMs: 0,
       recoveryCount: 0,
       adaptationCount: 0,
+      switchHistory: [],
+      abrStabilityIndex: 100,
       mosScore: 5.0,
       isUserSeeking: false,
       history: []
@@ -87,8 +89,31 @@ class QoETelemetrySentinel {
 
     // Shaka adaptation event
     this.player.addEventListener('adaptation', () => {
-      this.state.adaptationCount++;
+      const now = performance.now();
+      const tracks = this.player ? this.player.getVariantTracks() : [];
+      const activeTrack = tracks.find(t => t.active);
+      const newBitrate = activeTrack && activeTrack.videoBandwidth 
+        ? Math.round(activeTrack.videoBandwidth / 1000) 
+        : this.state.currentBitrateKbps;
+
+      // Filter duplicate micro-events (e.g. audio + video adapting at the same millisecond)
+      const lastSwitch = this.state.switchHistory[this.state.switchHistory.length - 1];
+      const isDuplicate = lastSwitch && ((now - lastSwitch.time < 1200) || (lastSwitch.bitrate === newBitrate));
+
+      if (!isDuplicate) {
+        this.state.adaptationCount++;
+        this.state.switchHistory.push({
+          time: now,
+          bitrate: newBitrate
+        });
+
+        if (this.state.switchHistory.length > 30) {
+          this.state.switchHistory.shift();
+        }
+      }
+
       this.collectTelemetrySample();
+      this.state.abrStabilityIndex = this.calculateAbrStabilityIndex();
     });
 
     // Native video pipeline events for QoE tracking
@@ -297,6 +322,40 @@ class QoETelemetrySentinel {
     return parseFloat(Math.max(1.0, Math.min(5.0, mos)).toFixed(2));
   }
 
+  calculateAbrStabilityIndex() {
+    if (!this.state.switchHistory || this.state.switchHistory.length <= 1) {
+      return 100;
+    }
+
+    let penalty = 0;
+    const history = this.state.switchHistory;
+    const now = performance.now();
+
+    // Look at switches in the last 30 seconds
+    const recentSwitches = history.filter(s => (now - s.time) < 30000);
+
+    for (let i = 1; i < recentSwitches.length; i++) {
+      const deltaSec = (recentSwitches[i].time - recentSwitches[i - 1].time) / 1000;
+      if (deltaSec < 2.0) {
+        // Severe panic oscillation (< 2s between variant shifts)
+        penalty += 10;
+      } else if (deltaSec < 3.5) {
+        // Rapid switch
+        penalty += 4;
+      }
+    }
+
+    // Direct flip-flop penalty (A -> B -> A)
+    for (let i = 2; i < recentSwitches.length; i++) {
+      if (recentSwitches[i].bitrate === recentSwitches[i - 2].bitrate) {
+        penalty += 6;
+      }
+    }
+
+    // Cap stability between 0% and 100%
+    return Math.max(0, Math.min(100, 100 - penalty));
+  }
+
   getSnapshot() {
     return {
       manifestUrl: this.state.manifestUrl,
@@ -315,6 +374,7 @@ class QoETelemetrySentinel {
       lastStallDurationMs: this.state.lastStallDurationMs,
       recoveryCount: this.state.recoveryCount,
       adaptationCount: this.state.adaptationCount,
+      abrStabilityIndex: this.state.abrStabilityIndex,
       mosScore: this.state.mosScore,
       currentTimeSec: parseFloat(this.videoElement.currentTime.toFixed(2)),
       durationSec: parseFloat((this.videoElement.duration || 0).toFixed(2))
@@ -336,8 +396,12 @@ class QoETelemetrySentinel {
     const mos = s.mosScore;
     const mosClass = mos >= 4.0 ? 'good' : (mos >= 3.0 ? 'warn' : 'crit');
 
+    const stab = s.abrStabilityIndex;
+    const stabClass = stab >= 75 ? 'good' : (stab >= 50 ? 'warn' : 'crit');
+
     updateEl('hud-state', s.playbackState, s.playbackState === 'PLAYING' ? 'good' : (s.playbackState === 'BUFFERING' ? 'crit' : 'warn'));
     updateEl('hud-mos', `${mos.toFixed(2)} / 5.0`, mosClass);
+    updateEl('hud-stability', `${stab}% (${stab >= 75 ? 'Stable' : (stab >= 50 ? 'Jitter' : 'Oscillating')})`, stabClass);
     updateEl('hud-ttff', s.ttffMs ? `${s.ttffMs} ms` : 'Measuring...', s.ttffMs && s.ttffMs < 3000 ? 'good' : 'highlight');
     updateEl('hud-bitrate', `${s.currentBitrateKbps.toLocaleString()} kbps`, 'highlight');
     updateEl('hud-bandwidth', `${(s.estimatedBandwidthKbps / 1000).toFixed(2)} Mbps`);

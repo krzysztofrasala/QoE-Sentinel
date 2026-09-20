@@ -75,12 +75,17 @@ flowchart LR
    - Simulates complete connection drops (`offline: true` for 6 seconds) mimicking subways, elevators, or cell handover failures.
    - Verifies player pipeline resilience through media buffer depletion and measures **Rebuffering Recovery Time (RRT)** upon network reconnection.
 
-7. **ITU-T P.1203 Inspired MOS (Mean Opinion Score)**
+7. **"Rollercoaster" Bandwidth Jitter & ABR Oscillation Stability SLA**
+   - Cycles network throughput across a 5-phase erratic rollercoaster (12 Mbps $\leftrightarrow$ 250 kbps) simulating high-speed cellular turbulence.
+   - Evaluates ABR smoothing hysteresis and enforces the **ABR Stability Index** ($\ge 70\%$) to prevent visual oscillation storms.
+
+8. **ITU-T P.1203 Inspired MOS (Mean Opinion Score)**
    - Algorithmic viewer satisfaction model computing a normalized QoE score (1.0 – 5.0).
    - Factors in base video encoding quality, TTFF startup latency penalties, stall frequency/duration weights, and ABR switching instability.
 
-8. **Automated Artifacts Generation**
+9. **Automated Artifacts Generation & Visual Analytics Dashboard**
    - Generates structured, timestamped JSON reports to `/artifacts/qoe-report.json`.
+   - Compiles a standalone dark-mode interactive HTML analytics dashboard (`dashboard.html`) powered by Chart.js time-series plots.
    - Captures high-resolution visual screenshots of the telemetry HUD under stress into `/artifacts/`.
 
 ---
@@ -90,6 +95,7 @@ flowchart LR
 | Metric | Description | Target / SLA |
 | :--- | :--- | :--- |
 | **QoE Score (ITU-T MOS)** | Synthesized viewer experience index (1.0 to 5.0 scale) based on ITU-T P.1203. | `≥ 3.8 / 5.0` |
+| **ABR Stability Index** | Resistance against rapid representation flipping and oscillation storms under network jitter. | `≥ 70 %` |
 | **TTFF (Time to First Frame)** | Duration in milliseconds between stream initiation and the first rendered frame. | `< 3,500 ms` |
 | **Rebuffering Recovery Time (RRT)** | Latency required to replenish buffer and resume smooth playback after an outage. | `< 6,000 ms` |
 | **Buffer Health (Length)** | Amount of forward-buffered media (in seconds) stored ahead of current playhead. | `> 15.0 s` |
@@ -110,7 +116,8 @@ QoE-Sentinel/
 │   ├── qoe-telemetry-hud.png      # High-res screenshot of live Stats for Nerds HUD
 │   ├── baseline-playback-hud.png  # Baseline playback verification screenshot
 │   ├── seek-hell-recovery-hud.png # Stress test recovery screenshot
-│   └── offline-recovery-hud.png   # Network outage recovery screenshot
+│   ├── offline-recovery-hud.png   # Network outage recovery screenshot
+│   └── rollercoaster-jitter-hud.png # Bandwidth jitter turbulence screenshot
 ├── scripts/
 │   └── generate-dashboard.js      # Analytics dashboard HTML generator
 ├── tests/
@@ -183,6 +190,8 @@ Navigate to: `http://localhost:3000`
     "ttffPass": true,
     "mosScore": 4.17,
     "mosScoreTargetSLA": ">= 3.8",
+    "abrStabilityIndex": 72,
+    "abrStabilityTargetSLA": ">= 70%",
     "droppedFrames": 0,
     "totalFrames": 412,
     "droppedFrameRatioPercent": 0,
