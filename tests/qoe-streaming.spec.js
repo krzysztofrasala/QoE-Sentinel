@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const { generateDashboard } = require('../scripts/generate-dashboard');
 
 const ARTIFACTS_DIR = path.join(__dirname, '..', 'artifacts');
 
@@ -263,6 +264,15 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
     console.log(`[Artifact] Offline Recovery HUD screenshot saved to: ${recoveryScreenshotPath}`);
 
     expect(fs.existsSync(recoveryScreenshotPath)).toBe(true);
+  });
+
+  test.afterAll(() => {
+    console.log('\n[Suite Complete] Compiling interactive visual QoE dashboard...');
+    try {
+      generateDashboard();
+    } catch (err) {
+      console.error('[Dashboard Error] Failed to auto-compile dashboard:', err);
+    }
   });
 
 });

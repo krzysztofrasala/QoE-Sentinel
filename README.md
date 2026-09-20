@@ -103,11 +103,14 @@ flowchart LR
 ```
 QoE-Sentinel/
 ├── artifacts/                     # Generated test reports & screenshots
+│   ├── dashboard.html             # Standalone interactive Chart.js analytics dashboard
 │   ├── qoe-report.json            # Machine-readable QoE benchmark metrics
 │   ├── qoe-telemetry-hud.png      # High-res screenshot of live Stats for Nerds HUD
 │   ├── baseline-playback-hud.png  # Baseline playback verification screenshot
 │   ├── seek-hell-recovery-hud.png # Stress test recovery screenshot
 │   └── offline-recovery-hud.png   # Network outage recovery screenshot
+├── scripts/
+│   └── generate-dashboard.js      # Analytics dashboard HTML generator
 ├── tests/
 │   └── qoe-streaming.spec.js      # Playwright E2E QoE test suite
 ├── index.html                     # HTML5 streaming test stage with Shaka Player
@@ -134,7 +137,7 @@ npm install
 ```
 
 ### 3. Running Automated QoE Tests
-Run the full headless suite:
+Run the full headless suite (automatically compiles `dashboard.html` upon completion):
 ```bash
 npm test
 ```
@@ -149,7 +152,13 @@ View the generated Playwright HTML execution report:
 npm run test:report
 ```
 
-### 4. Running the Interactive Web Player
+### 4. Interactive Visual QoE Dashboard
+Open the standalone visual analytics dashboard featuring Chart.js time-series plots, KPI verdict badges, and screenshot lightbox:
+```bash
+npm run dashboard
+```
+
+### 5. Running the Interactive Web Player
 Start the local server and open your browser:
 ```bash
 npm start

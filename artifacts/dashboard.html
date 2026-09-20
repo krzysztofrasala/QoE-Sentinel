@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QoE-Sentinel // Streaming Telemetry Analytics Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-base: #080c14;
+      --bg-surface: #0f1624;
+      --bg-card: #141c2e;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 210, 255, 0.25);
+      --text-main: #f0f4fc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --cyan: #00d2ff;
+      --green: #00e676;
+      --red: #ff1744;
+      --yellow: #ffab00;
+      --purple: #d946ef;
+      --font-sans: 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Header */
+    .dashboard-header {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .header-branding {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      padding: 3px 10px;
+      border-radius: 999px;
+      width: fit-content;
+    }
+
+    .dashboard-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .dashboard-title span {
+      color: var(--cyan);
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .verdict-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 230, 118, 0.12);
+      border: 1px solid var(--green);
+      color: var(--green);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    /* KPI Cards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--border-color);
+    }
+
+    .kpi-card.accent-cyan::before { background: var(--cyan); }
+    .kpi-card.accent-green::before { background: var(--green); }
+    .kpi-card.accent-yellow::before { background: var(--yellow); }
+    .kpi-card.accent-red::before { background: var(--red); }
+    .kpi-card.accent-purple::before { background: var(--purple); }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+    }
+
+    .kpi-value.good { color: var(--green); }
+    .kpi-value.warn { color: var(--yellow); }
+    .kpi-value.crit { color: var(--red); }
+
+    .kpi-subtext {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Charts Section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chart-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .chart-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 320px;
+      width: 100%;
+    }
+
+    /* Artifacts Gallery */
+    .artifacts-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .gallery-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      cursor: pointer;
+    }
+
+    .gallery-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--cyan);
+    }
+
+    .gallery-img-container {
+      width: 100%;
+      height: 180px;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gallery-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-card:hover .gallery-img-container img {
+      transform: scale(1.03);
+    }
+
+    .gallery-card-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gallery-card-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .gallery-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Telemetry Table */
+    .table-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .table-responsive {
+      max-height: 340px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      text-align: left;
+    }
+
+    th {
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      padding: 10px 14px;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .status-tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .status-tag.PLAYING { background: rgba(0, 230, 118, 0.15); color: var(--green); }
+    .status-tag.BUFFERING { background: rgba(255, 23, 68, 0.15); color: var(--red); }
+    .status-tag.SEEKING { background: rgba(255, 171, 0, 0.15); color: var(--yellow); }
+    .status-tag.LOADING { background: rgba(0, 210, 255, 0.15); color: var(--cyan); }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      object-fit: contain;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 24px;
+      right: 32px;
+      font-size: 32px;
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    
+    <!-- Top Header -->
+    <header class="dashboard-header">
+      <div class="header-branding">
+        <div class="badge-pill">Autonomous QoE Benchmark</div>
+        <h1 class="dashboard-title">QoE-Sentinel <span>// Telemetry Analytics</span></h1>
+      </div>
+      <div class="header-meta">
+        <div>Platform: <strong>Chromium (Playwright CDP)</strong></div>
+        <div>Timestamp: <strong>11:16:22 PM</strong></div>
+        <div class="verdict-badge">✔ ALL 4 SLAs PASSED</div>
+      </div>
+    </header>
+
+    <!-- Top KPI Summary Cards -->
+    <section class="kpi-grid">
+      
+      <div class="kpi-card accent-purple">
+        <div class="kpi-label">
+          <span>QoE SCORE (ITU-T MOS)</span>
+          <span>⭐</span>
+        </div>
+        <div class="kpi-value good">4.15 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
+        <div class="kpi-subtext">Rating: <strong>EXCELLENT</strong> (SLA &ge; 3.8)</div>
+      </div>
+
+      <div class="kpi-card accent-cyan">
+        <div class="kpi-label">
+          <span>STARTUP LATENCY (TTFF)</span>
+          <span>⚡</span>
+        </div>
+        <div class="kpi-value good">244 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
+        <div class="kpi-subtext">Initial frame decoded within budget (&lt; 3,500ms)</div>
+      </div>
+
+      <div class="kpi-card accent-yellow">
+        <div class="kpi-label">
+          <span>ABR THROTTLING ADAPTATION</span>
+          <span>📉</span>
+        </div>
+        <div class="kpi-value">14932 &rarr; 254 <span style="font-size: 14px; color: var(--text-muted);">kbps</span></div>
+        <div class="kpi-subtext">Automated downswitch under 350 kbps constraint</div>
+      </div>
+
+      <div class="kpi-card accent-green">
+        <div class="kpi-label">
+          <span>BUFFER DEPTH RANGE</span>
+          <span>🛡️</span>
+        </div>
+        <div class="kpi-value good">0.0s &ndash; 12.0s</div>
+        <div class="kpi-subtext">Final forward buffer: <strong>10.9s</strong></div>
+      </div>
+
+      <div class="kpi-card accent-red">
+        <div class="kpi-label">
+          <span>REBUFFERING INTERRUPTIONS</span>
+          <span>⚠️</span>
+        </div>
+        <div class="kpi-value warn">1 <span style="font-size: 14px; color: var(--text-muted);">stalls</span></div>
+        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.18s</strong></div>
+      </div>
+
+    </section>
+
+    <!-- Interactive Charts Section -->
+    <section class="charts-grid">
+      
+      <!-- Chart 1: ABR Dynamics -->
+      <div class="chart-panel">
+        <div class="chart-panel-header">
+          <div class="chart-title">
+            <span>📈 ABR Adaptation & Transport Throughput Dynamics</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">Sampling: 1Hz</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="abrChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Buffer & MOS -->
+      <div class="chart-panel">
+        <div class="chart-panel-header">
+          <div class="chart-title">
+            <span>🛡️ Media Buffer Health & Real-Time MOS Score Trend</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">ITU-T P.1203 Model</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="bufferChart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Visual Artifacts Gallery -->
+    <section class="artifacts-section">
+      <div class="section-title">
+        <span>📸 Captured Playback HUD Screenshots Under Stress</span>
+      </div>
+      <div class="gallery-grid">
+        
+        <div class="gallery-card" onclick="openModal('qoe-telemetry-hud.png')">
+          <div class="gallery-img-container">
+            <img src="qoe-telemetry-hud.png" alt="CDP Network Throttling HUD">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">CDP Network Throttling HUD</div>
+            <div class="gallery-card-desc">Telemetry under 350 kbps + 300ms RTT network choke</div>
+          </div>
+        </div>
+
+        <div class="gallery-card" onclick="openModal('offline-recovery-hud.png')">
+          <div class="gallery-img-container">
+            <img src="offline-recovery-hud.png" alt="Tunnel Vision Outage Recovery">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Tunnel Vision Outage Recovery</div>
+            <div class="gallery-card-desc">Playback & buffer replenishment after 6s blackout</div>
+          </div>
+        </div>
+
+        <div class="gallery-card" onclick="openModal('seek-hell-recovery-hud.png')">
+          <div class="gallery-img-container">
+            <img src="seek-hell-recovery-hud.png" alt="Seek Hell Timeline Stress">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Seek Hell Timeline Stress</div>
+            <div class="gallery-card-desc">Recovery after 6 aggressive back-to-back seeks</div>
+          </div>
+        </div>
+
+        <div class="gallery-card" onclick="openModal('baseline-playback-hud.png')">
+          <div class="gallery-img-container">
+            <img src="baseline-playback-hud.png" alt="Startup Baseline HUD">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Startup SLA Baseline</div>
+            <div class="gallery-card-desc">Clean startup state and initial 4K variant playback</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Raw Telemetry Table -->
+    <section class="table-section">
+      <div class="section-title">
+        <span>📋 Time-Series Telemetry Samples (17 Collected Samples)</span>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>State</th>
+              <th>Bitrate</th>
+              <th>Est. Bandwidth</th>
+              <th>Resolution</th>
+              <th>Buffer</th>
+              <th>Frames (Drop/Tot)</th>
+              <th>Stalls</th>
+              <th>MOS Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>0s</td>
+                <td><span class="status-tag LOADING">LOADING</span></td>
+                <td><strong>4,953</strong> kbps</td>
+                <td>9.00 Mbps</td>
+                <td>1280x720</td>
+                <td>0.0s</td>
+                <td>0 / 0 (0%)</td>
+                <td>0 (0s)</td>
+                <td><strong>5.00</strong></td>
+              </tr>
+            
+              <tr>
+                <td>0s</td>
+                <td><span class="status-tag BUFFERING">BUFFERING</span></td>
+                <td><strong>14,932</strong> kbps</td>
+                <td>44.25 Mbps</td>
+                <td>3840x2160</td>
+                <td>0.0s</td>
+                <td>0 / 0 (0%)</td>
+                <td>1 (0s)</td>
+                <td><strong>5.00</strong></td>
+              </tr>
+            
+              <tr>
+                <td>1s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>14,932</strong> kbps</td>
+                <td>106.35 Mbps</td>
+                <td>3840x2160</td>
+                <td>11.0s</td>
+                <td>0 / 33 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>4.28</strong></td>
+              </tr>
+            
+              <tr>
+                <td>1s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 33 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>2s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>10.0s</td>
+                <td>0 / 63 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>3s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>9.0s</td>
+                <td>0 / 93 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>4s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>8.0s</td>
+                <td>0 / 123 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>5s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 153 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>6s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.30 Mbps</td>
+                <td>320x180</td>
+                <td>10.0s</td>
+                <td>0 / 183 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>7s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.19 Mbps</td>
+                <td>320x180</td>
+                <td>9.0s</td>
+                <td>0 / 213 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>8s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.23 Mbps</td>
+                <td>320x180</td>
+                <td>8.0s</td>
+                <td>0 / 243 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>9s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.23 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 273 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>10s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.20 Mbps</td>
+                <td>320x180</td>
+                <td>10.0s</td>
+                <td>0 / 303 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>11s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.20 Mbps</td>
+                <td>320x180</td>
+                <td>9.0s</td>
+                <td>0 / 333 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>12s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.21 Mbps</td>
+                <td>320x180</td>
+                <td>12.0s</td>
+                <td>0 / 363 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>13s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>254</strong> kbps</td>
+                <td>0.18 Mbps</td>
+                <td>320x180</td>
+                <td>11.0s</td>
+                <td>0 / 393 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>1.18</strong></td>
+              </tr>
+            
+              <tr>
+                <td>13s</td>
+                <td><span class="status-tag PLAYING">PLAYING</span></td>
+                <td><strong>4,953</strong> kbps</td>
+                <td>9.00 Mbps</td>
+                <td>1280x720</td>
+                <td>10.9s</td>
+                <td>0 / 398 (0%)</td>
+                <td>1 (0.18s)</td>
+                <td><strong>4.15</strong></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Image Lightbox Modal -->
+  <div class="modal" id="imageModal" onclick="closeModal()">
+    <span class="modal-close">&times;</span>
+    <img class="modal-content" id="modalImg" src="">
+  </div>
+
+  <script>
+    // Chart 1: ABR Throughput & Bitrate Dynamics
+    const ctxAbr = document.getElementById('abrChart').getContext('2d');
+    new Chart(ctxAbr, {
+      type: 'line',
+      data: {
+        labels: ["0s","0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
+        datasets: [
+          {
+            label: 'Stream Bitrate (kbps)',
+            data: [4953,14932,14932,254,254,254,254,254,254,254,254,254,254,254,254,254,4953],
+            borderColor: '#00d2ff',
+            backgroundColor: 'rgba(0, 210, 255, 0.1)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.25,
+            pointRadius: 2,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Est. Bandwidth (kbps)',
+            data: [9000,44253,106354,300,300,300,300,300,300,188,229,233,204,197,211,184,9000],
+            borderColor: '#ffab00',
+            borderWidth: 1.8,
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.2,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
+          },
+          tooltip: {
+            backgroundColor: '#141c2e',
+            titleColor: '#00d2ff',
+            bodyColor: '#f0f4fc',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+          }
+        }
+      }
+    });
+
+    // Chart 2: Buffer Length & MOS Score Trend
+    const ctxBuffer = document.getElementById('bufferChart').getContext('2d');
+    new Chart(ctxBuffer, {
+      type: 'line',
+      data: {
+        labels: ["0s","0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
+        datasets: [
+          {
+            label: 'Buffer Length (sec)',
+            data: [0,0,11.04,11.03,10.04,9.04,8.04,11.04,10.04,9.04,8.04,11.04,10.04,9.04,12.04,11.04,10.89],
+            borderColor: '#00e676',
+            backgroundColor: 'rgba(0, 230, 118, 0.15)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            yAxisID: 'yBuffer',
+            pointRadius: 2
+          },
+          {
+            label: 'QoE MOS Score (1-5)',
+            data: [5,5,4.28,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,1.18,4.15],
+            borderColor: '#d946ef',
+            borderWidth: 2.5,
+            fill: false,
+            tension: 0.2,
+            yAxisID: 'yMos',
+            pointRadius: 3,
+            pointBackgroundColor: '#d946ef'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
+          },
+          tooltip: {
+            backgroundColor: '#141c2e',
+            titleColor: '#00e676',
+            bodyColor: '#f0f4fc',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+          },
+          yBuffer: {
+            type: 'linear',
+            position: 'left',
+            title: { display: true, text: 'Buffer (seconds)', color: '#00e676' },
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#00e676', font: { family: 'JetBrains Mono', size: 11 } }
+          },
+          yMos: {
+            type: 'linear',
+            position: 'right',
+            min: 1,
+            max: 5,
+            title: { display: true, text: 'ITU-T MOS (1-5)', color: '#d946ef' },
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#d946ef', font: { family: 'JetBrains Mono', size: 11 } }
+          }
+        }
+      }
+    });
+
+    function openModal(imgSrc) {
+      const modal = document.getElementById('imageModal');
+      const img = document.getElementById('modalImg');
+      img.src = imgSrc;
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('imageModal').classList.remove('active');
+    }
+  </script>
+</body>
+</html>

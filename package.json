@@ -8,7 +8,9 @@
     "test": "npx playwright test",
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
-    "test:report": "npx playwright show-report"
+    "test:report": "npx playwright show-report",
+    "dashboard": "node scripts/generate-dashboard.js && open artifacts/dashboard.html",
+    "report:dashboard": "open artifacts/dashboard.html"
   },
   "keywords": [
     "qoe",
