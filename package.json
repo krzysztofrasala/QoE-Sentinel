@@ -1,0 +1,29 @@
+{
+  "name": "qoe-sentinel",
+  "version": "1.0.0",
+  "description": "Autonomous Quality of Experience (QoE) video streaming test framework with Shaka Player, Playwright, and CDP network throttling",
+  "main": "player.js",
+  "scripts": {
+    "start": "npx serve -l 3000 .",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report"
+  },
+  "keywords": [
+    "qoe",
+    "video-streaming",
+    "dash",
+    "shaka-player",
+    "playwright",
+    "cdp",
+    "qa-automation",
+    "netflix-qa"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "serve": "^14.2.4"
+  }
+}

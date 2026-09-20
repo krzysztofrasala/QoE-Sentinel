@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QoE-Sentinel | Autonomous Video Streaming Telemetry Engine</title>
+  <meta name="description" content="Autonomous HTML5 video streaming Quality of Experience (QoE) testing platform featuring Shaka Player, real-time Stats for Nerds telemetry, and CDP network benchmarking.">
+  
+  <!-- Shaka Player CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.11.2/shaka-player.compiled.js"></script>
+  
+  <!-- App Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <span class="brand-badge">NETFLIX QA LAB</span>
+      <h1 class="brand-title">QoE-Sentinel <span>// Streaming Telemetry Engine</span></h1>
+    </div>
+    <div class="header-status">
+      <div class="status-pill">
+        <span class="pulse-dot"></span>
+        <span id="header-stream-protocol">DASH / ABR Active</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="main-content">
+
+    <!-- Video Stage Container with HUD Overlay -->
+    <div class="player-viewport-container" id="player-container">
+      
+      <!-- Video Element -->
+      <video id="video-player" playsinline autoplay muted controls></video>
+
+      <!-- "Stats for Nerds" Telemetry HUD -->
+      <aside class="nerd-hud" id="nerd-hud" aria-label="Stats for Nerds Telemetry Overlay">
+        <div class="hud-header">
+          <div class="hud-title">
+            <span>STATS FOR NERDS</span>
+            <span class="hud-badge">LIVE QoE</span>
+          </div>
+          <button class="hud-close-btn" id="hud-close-btn" title="Close HUD (Press S to toggle)">×</button>
+        </div>
+
+        <div class="hud-grid">
+          <div class="hud-row">
+            <span class="hud-label">Playback State:</span>
+            <span class="hud-val highlight" id="hud-state">INITIALIZING</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">Time to 1st Frame (TTFF):</span>
+            <span class="hud-val" id="hud-ttff">Measuring...</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">Current Bitrate:</span>
+            <span class="hud-val highlight" id="hud-bitrate">0 kbps</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">Est. Bandwidth (ABR):</span>
+            <span class="hud-val" id="hud-bandwidth">0.00 Mbps</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">Resolution / Codec:</span>
+            <span class="hud-val" id="hud-resolution">0x0 (AVC1)</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">Buffer Health:</span>
+            <span class="hud-val good" id="hud-buffer">0.0 s</span>
+          </div>
+          <div class="buffer-bar-wrapper">
+            <div class="buffer-bar-fill" id="hud-buffer-fill"></div>
+          </div>
+          <div class="hud-row" style="margin-top: 6px;">
+            <span class="hud-label">Dropped / Total Frames:</span>
+            <span class="hud-val" id="hud-dropped">0 / 0 (0%)</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">Stalls / Rebuffering:</span>
+            <span class="hud-val good" id="hud-stalls">0 (0.00s)</span>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Quick Control Bar -->
+    <section class="control-bar" aria-label="Player Controls">
+      <div class="control-group">
+        <button class="btn btn-primary" id="btn-toggle-hud" title="Toggle Stats for Nerds overlay">
+          📊 Toggle Stats for Nerds (S)
+        </button>
+        <button class="btn" id="btn-seek-test" title="Simulate timeline jump">
+          ⚡ Trigger Random Seek
+        </button>
+      </div>
+      <div class="control-group">
+        <span style="font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono);">
+          Stream: Akamai BBB DASH Multi-bitrate
+        </span>
+      </div>
+    </section>
+
+    <!-- KPI Summary Dashboard -->
+    <section class="kpi-cards-grid" aria-label="Key Performance Indicators">
+      
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span>TIME TO FIRST FRAME (TTFF)</span>
+          <span>⚡</span>
+        </div>
+        <div class="kpi-card-value" id="card-ttff">--</div>
+        <div class="kpi-card-subtitle">Startup latency SLA budget: &lt; 3,500 ms</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span>VARIANT BITRATE</span>
+          <span>📈</span>
+        </div>
+        <div class="kpi-card-value" id="card-bitrate">0 kbps</div>
+        <div class="kpi-card-subtitle">Active video stream payload</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span>BUFFER AHEAD</span>
+          <span>🛡️</span>
+        </div>
+        <div class="kpi-card-value" id="card-buffer">0.0s</div>
+        <div class="kpi-card-subtitle">Target pipeline buffer &gt; 15s</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span>DROPPED FRAME RATIO</span>
+          <span>🎞️</span>
+        </div>
+        <div class="kpi-card-value" id="card-dropped">0.0%</div>
+        <div class="kpi-card-subtitle">Renderer smoothness SLA: &lt; 1.0%</div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div>QoE-Sentinel Automated Streaming Evaluation System • Netflix QA Engineering Portfolio</div>
+    <div>Built with Shaka Player, Playwright, CDP &amp; HTML5 Media Source Extensions</div>
+  </footer>
+
+  <!-- App Script -->
+  <script src="player.js"></script>
+</body>
+</html>

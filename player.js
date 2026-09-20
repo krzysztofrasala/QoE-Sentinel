@@ -1,0 +1,384 @@
+/**
+ * QoE-Sentinel - Real-time HTML5 / DASH Quality of Experience Telemetry Engine
+ * Embedded with Google Shaka Player
+ */
+
+const DEFAULT_DASH_MANIFEST = 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd';
+
+class QoETelemetrySentinel {
+  constructor() {
+    this.videoElement = document.getElementById('video-player');
+    this.hudElement = document.getElementById('nerd-hud');
+    this.player = null;
+
+    // QoE Telemetry State
+    this.state = {
+      manifestUrl: DEFAULT_DASH_MANIFEST,
+      loadStartTime: null,
+      ttffMs: null,
+      firstFrameRendered: false,
+      playbackState: 'INITIALIZING',
+      currentBitrateKbps: 0,
+      estimatedBandwidthKbps: 0,
+      bufferLengthSec: 0,
+      droppedFrames: 0,
+      totalFrames: 0,
+      dropRatioPercent: 0,
+      resolution: '0x0',
+      stallsCount: 0,
+      totalStallDurationMs: 0,
+      stallStartTime: null,
+      isUserSeeking: false,
+      history: []
+    };
+
+    this.timerId = null;
+  }
+
+  async init() {
+    // Install built-in polyfills to patch any browser quirks
+    shaka.polyfill.installAll();
+
+    if (!shaka.Player.isBrowserSupported()) {
+      console.error('QoE-Sentinel: Browser not supported for Shaka Player');
+      this.state.playbackState = 'UNSUPPORTED_BROWSER';
+      this.updateUI();
+      return;
+    }
+
+    this.player = new shaka.Player(this.videoElement);
+
+    // Configure ABR and buffering thresholds for sensitive QoE benchmarking
+    this.player.configure({
+      streaming: {
+        bufferingGoal: 30, // seconds
+        rebufferingGoal: 2,
+        bufferBehind: 10,
+        retryParameters: {
+          maxAttempts: 4,
+          baseDelay: 1000,
+          backoffFactor: 2
+        }
+      },
+      abr: {
+        enabled: true,
+        defaultBandwidthEstimate: 3000000, // 3 Mbps
+        switchInterval: 2 // ABR adaptation evaluation interval (seconds)
+      }
+    });
+
+    this.attachEventListeners();
+    await this.loadStream(this.state.manifestUrl);
+
+    // Start 1Hz Telemetry Loop
+    this.timerId = setInterval(() => this.collectTelemetrySample(), 1000);
+  }
+
+  attachEventListeners() {
+    // Shaka player error handling
+    this.player.addEventListener('error', (event) => {
+      console.error('Shaka Player Error:', event.detail);
+      this.state.playbackState = 'ERROR';
+    });
+
+    // Shaka adaptation event
+    this.player.addEventListener('adaptation', () => {
+      this.collectTelemetrySample();
+    });
+
+    // Native video pipeline events for QoE tracking
+    this.videoElement.addEventListener('play', () => {
+      if (!this.state.isUserSeeking) {
+        this.state.playbackState = 'PLAYING';
+      }
+    });
+
+    this.videoElement.addEventListener('playing', () => {
+      this.handlePlaybackResumed();
+    });
+
+    this.videoElement.addEventListener('pause', () => {
+      if (!this.state.isUserSeeking && this.state.playbackState !== 'BUFFERING') {
+        this.state.playbackState = 'PAUSED';
+      }
+    });
+
+    this.videoElement.addEventListener('seeking', () => {
+      this.state.isUserSeeking = true;
+      this.state.playbackState = 'SEEKING';
+    });
+
+    this.videoElement.addEventListener('seeked', () => {
+      this.state.isUserSeeking = false;
+      if (!this.videoElement.paused) {
+        this.state.playbackState = 'PLAYING';
+      }
+    });
+
+    this.videoElement.addEventListener('waiting', () => {
+      // Rebuffering / Stall event
+      if (!this.state.isUserSeeking) {
+        this.state.playbackState = 'BUFFERING';
+        this.state.stallsCount++;
+        this.state.stallStartTime = performance.now();
+      }
+    });
+
+    // Time to First Frame (TTFF) detection via loadeddata & timeupdate
+    const detectFirstFrame = () => {
+      if (!this.state.firstFrameRendered && this.state.loadStartTime) {
+        const quality = this.videoElement.getVideoPlaybackQuality 
+          ? this.videoElement.getVideoPlaybackQuality() 
+          : null;
+        
+        // Frame rendered if totalVideoFrames > 0 or currentTime progressed
+        if ((quality && quality.totalVideoFrames > 0) || this.videoElement.currentTime > 0.05) {
+          const now = performance.now();
+          this.state.ttffMs = Math.round(now - this.state.loadStartTime);
+          this.state.firstFrameRendered = true;
+          this.videoElement.removeEventListener('timeupdate', detectFirstFrame);
+          this.videoElement.removeEventListener('loadeddata', detectFirstFrame);
+          console.log(`[QoE-Sentinel] TTFF captured: ${this.state.ttffMs} ms`);
+        }
+      }
+    };
+
+    this.videoElement.addEventListener('loadeddata', detectFirstFrame);
+    this.videoElement.addEventListener('timeupdate', detectFirstFrame);
+  }
+
+  handlePlaybackResumed() {
+    this.state.playbackState = 'PLAYING';
+    if (this.state.stallStartTime) {
+      const stallDuration = performance.now() - this.state.stallStartTime;
+      this.state.totalStallDurationMs += stallDuration;
+      this.state.stallStartTime = null;
+    }
+  }
+
+  async loadStream(manifestUrl) {
+    this.state.manifestUrl = manifestUrl;
+    this.state.loadStartTime = performance.now();
+    this.state.firstFrameRendered = false;
+    this.state.ttffMs = null;
+    this.state.playbackState = 'LOADING';
+    this.updateUI();
+
+    try {
+      await this.player.load(manifestUrl);
+      console.log('[QoE-Sentinel] DASH Manifest loaded successfully');
+      
+      // Auto-play unmuted (or muted if browser policy requires)
+      try {
+        await this.videoElement.play();
+      } catch (err) {
+        console.warn('[QoE-Sentinel] Autoplay blocked, muting video for autonomous playback:', err);
+        this.videoElement.muted = true;
+        await this.videoElement.play();
+      }
+    } catch (error) {
+      console.error('[QoE-Sentinel] Error loading manifest:', error);
+      this.state.playbackState = 'LOAD_FAILED';
+    }
+  }
+
+  calculateBufferAhead() {
+    if (!this.videoElement || this.videoElement.buffered.length === 0) {
+      return 0;
+    }
+    const currentTime = this.videoElement.currentTime;
+    const buffered = this.videoElement.buffered;
+    for (let i = 0; i < buffered.length; i++) {
+      if (buffered.start(i) <= currentTime && currentTime <= buffered.end(i)) {
+        return Math.max(0, buffered.end(i) - currentTime);
+      }
+    }
+    return 0;
+  }
+
+  collectTelemetrySample() {
+    if (!this.player || !this.videoElement) return;
+
+    // Buffer length
+    const bufferSec = this.calculateBufferAhead();
+    this.state.bufferLengthSec = parseFloat(bufferSec.toFixed(2));
+
+    // Shaka stats
+    const stats = this.player.getStats();
+    if (stats) {
+      // Estimated bandwidth from ABR
+      if (stats.estimatedBandwidth) {
+        this.state.estimatedBandwidthKbps = Math.round(stats.estimatedBandwidth / 1000);
+      }
+      
+      // Video variant bitrate
+      if (stats.streamBandwidth) {
+        this.state.currentBitrateKbps = Math.round(stats.streamBandwidth / 1000);
+      }
+    }
+
+    // Active variant lookup
+    const tracks = this.player.getVariantTracks();
+    const activeTrack = tracks.find(t => t.active);
+    if (activeTrack) {
+      if (activeTrack.videoBandwidth) {
+        this.state.currentBitrateKbps = Math.round(activeTrack.videoBandwidth / 1000);
+      }
+      if (activeTrack.width && activeTrack.height) {
+        this.state.resolution = `${activeTrack.width}x${activeTrack.height}`;
+      }
+    } else if (this.videoElement.videoWidth && this.videoElement.videoHeight) {
+      this.state.resolution = `${this.videoElement.videoWidth}x${this.videoElement.videoHeight}`;
+    }
+
+    // Frame quality
+    if (this.videoElement.getVideoPlaybackQuality) {
+      const q = this.videoElement.getVideoPlaybackQuality();
+      this.state.droppedFrames = q.droppedVideoFrames;
+      this.state.totalFrames = q.totalVideoFrames;
+      this.state.dropRatioPercent = q.totalVideoFrames > 0
+        ? parseFloat(((q.droppedVideoFrames / q.totalVideoFrames) * 100).toFixed(2))
+        : 0;
+    }
+
+    // Record historical snapshot for time-series / reporting
+    const snapshot = this.getSnapshot();
+    this.state.history.push({
+      timestamp: Date.now(),
+      ...snapshot
+    });
+
+    // Keep last 120 samples
+    if (this.state.history.length > 120) {
+      this.state.history.shift();
+    }
+
+    this.updateUI();
+  }
+
+  getSnapshot() {
+    return {
+      manifestUrl: this.state.manifestUrl,
+      playbackState: this.state.playbackState,
+      firstFrameRendered: this.state.firstFrameRendered,
+      ttffMs: this.state.ttffMs,
+      currentBitrateKbps: this.state.currentBitrateKbps,
+      estimatedBandwidthKbps: this.state.estimatedBandwidthKbps,
+      bufferLengthSec: this.state.bufferLengthSec,
+      droppedFrames: this.state.droppedFrames,
+      totalFrames: this.state.totalFrames,
+      dropRatioPercent: this.state.dropRatioPercent,
+      resolution: this.state.resolution,
+      stallsCount: this.state.stallsCount,
+      totalStallDurationSec: parseFloat((this.state.totalStallDurationMs / 1000).toFixed(2)),
+      currentTimeSec: parseFloat(this.videoElement.currentTime.toFixed(2)),
+      durationSec: parseFloat((this.videoElement.duration || 0).toFixed(2))
+    };
+  }
+
+  updateUI() {
+    const s = this.getSnapshot();
+
+    // Update HUD rows
+    const updateEl = (id, text, className) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = text;
+        if (className !== undefined) el.className = `hud-val ${className}`;
+      }
+    };
+
+    updateEl('hud-state', s.playbackState, s.playbackState === 'PLAYING' ? 'good' : (s.playbackState === 'BUFFERING' ? 'crit' : 'warn'));
+    updateEl('hud-ttff', s.ttffMs ? `${s.ttffMs} ms` : 'Measuring...', s.ttffMs && s.ttffMs < 3000 ? 'good' : 'highlight');
+    updateEl('hud-bitrate', `${s.currentBitrateKbps.toLocaleString()} kbps`, 'highlight');
+    updateEl('hud-bandwidth', `${(s.estimatedBandwidthKbps / 1000).toFixed(2)} Mbps`);
+    updateEl('hud-buffer', `${s.bufferLengthSec.toFixed(1)} s`, s.bufferLengthSec > 10 ? 'good' : (s.bufferLengthSec > 3 ? 'warn' : 'crit'));
+    updateEl('hud-resolution', s.resolution);
+    updateEl('hud-dropped', `${s.droppedFrames} / ${s.totalFrames} (${s.dropRatioPercent}%)`, s.dropRatioPercent < 1 ? 'good' : 'warn');
+    updateEl('hud-stalls', `${s.stallsCount} (${s.totalStallDurationSec}s)`, s.stallsCount === 0 ? 'good' : 'crit');
+
+    // Buffer visual bar (max 30s target)
+    const bar = document.getElementById('hud-buffer-fill');
+    if (bar) {
+      const pct = Math.min(100, Math.round((s.bufferLengthSec / 30) * 100));
+      bar.style.width = `${pct}%`;
+      if (s.bufferLengthSec > 12) {
+        bar.style.background = 'linear-gradient(90deg, #00e676, #00d2ff)';
+      } else if (s.bufferLengthSec > 4) {
+        bar.style.background = 'linear-gradient(90deg, #ffab00, #ffd600)';
+      } else {
+        bar.style.background = '#ff1744';
+      }
+    }
+
+    // Top Header & KPI Cards
+    const cardTtff = document.getElementById('card-ttff');
+    if (cardTtff) cardTtff.textContent = s.ttffMs ? `${s.ttffMs} ms` : '--';
+
+    const cardBitrate = document.getElementById('card-bitrate');
+    if (cardBitrate) cardBitrate.textContent = `${s.currentBitrateKbps} kbps`;
+
+    const cardBuffer = document.getElementById('card-buffer');
+    if (cardBuffer) cardBuffer.textContent = `${s.bufferLengthSec.toFixed(1)}s`;
+
+    const cardDropped = document.getElementById('card-dropped');
+    if (cardDropped) cardDropped.textContent = `${s.dropRatioPercent}%`;
+  }
+
+  toggleHud() {
+    if (this.hudElement) {
+      this.hudElement.classList.toggle('hidden');
+    }
+  }
+
+  async seek(targetSeconds) {
+    if (!this.videoElement) return;
+    const duration = this.videoElement.duration || 600;
+    const clamped = Math.max(0, Math.min(duration - 5, targetSeconds));
+    console.log(`[QoE-Sentinel] Seeking to: ${clamped}s`);
+    this.videoElement.currentTime = clamped;
+  }
+}
+
+// Global Sentinel instance initialized on DOM load
+window.addEventListener('DOMContentLoaded', () => {
+  window.sentinel = new QoETelemetrySentinel();
+  window.sentinel.init();
+
+  // Expose global interface for Playwright automation & inspection
+  window.__QOE_SENTINEL__ = {
+    getSnapshot: () => window.sentinel.getSnapshot(),
+    getHistory: () => window.sentinel.state.history,
+    seekTo: (sec) => window.sentinel.seek(sec),
+    toggleHud: () => window.sentinel.toggleHud(),
+    loadStream: (url) => window.sentinel.loadStream(url),
+    player: () => window.sentinel.player,
+    video: () => window.sentinel.videoElement
+  };
+
+  // Setup UI controls
+  const toggleBtn = document.getElementById('btn-toggle-hud');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => window.sentinel.toggleHud());
+  }
+
+  const closeHudBtn = document.getElementById('hud-close-btn');
+  if (closeHudBtn) {
+    closeHudBtn.addEventListener('click', () => window.sentinel.toggleHud());
+  }
+
+  const seekTestBtn = document.getElementById('btn-seek-test');
+  if (seekTestBtn) {
+    seekTestBtn.addEventListener('click', () => {
+      const randomTime = Math.floor(Math.random() * 200) + 10;
+      window.sentinel.seek(randomTime);
+    });
+  }
+
+  // Keyboard shortcut 'S' for HUD
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 's' || e.key === 'S') {
+      window.sentinel.toggleHud();
+    }
+  });
+});
