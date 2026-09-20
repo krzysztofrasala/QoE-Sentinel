@@ -13,33 +13,33 @@
 ## 📌 Architecture & Design
 
 ```mermaid
-graph LR
-    subgraph Playwright Automation Engine
-        Runner[E2E Test Runner]
-        CDP[CDP Session: Network.emulateNetworkConditions]
-        Reporter[Artifact Exporter]
+flowchart LR
+    subgraph Engine ["Playwright Automation Engine"]
+        Runner["E2E Test Runner"]
+        CDP["CDP Session (Network Throttling)"]
+        Reporter["Artifact Exporter"]
     end
 
-    subgraph Browser Runtime
-        Player[Shaka Player v4.x]
-        Video[HTML5 Video Element]
-        HUD["Stats for Nerds" Overlay HUD]
-        Telemetry[QoE Sentinel Metrics Engine]
+    subgraph Runtime ["Browser Runtime (Chromium)"]
+        Player["Shaka Player (MPEG-DASH)"]
+        Video["HTML5 Video Element"]
+        HUD["Stats for Nerds HUD"]
+        Telemetry["QoE Sentinel Engine"]
     end
 
-    subgraph Output
-        JSON[/artifacts/qoe-report.json/]
-        PNG[/artifacts/qoe-telemetry-hud.png/]
+    subgraph Output ["Generated Artifacts"]
+        JSON["qoe-report.json"]
+        PNG["qoe-telemetry-hud.png"]
     end
 
-    Runner -->|Launches & Controls| Browser Runtime
-    CDP -->|Simulates Network Choke 350 kbps| Player
-    Player -->|Feeds MediaSource Buffers| Video
-    Video -->|Emits Events & Quality Stats| Telemetry
-    Telemetry -->|Refreshes 1Hz| HUD
-    Telemetry -->|window.__QOE_SENTINEL__| Runner
-    Runner --> JSON
-    Runner --> PNG
+    Runner -->|"Launches & Controls"| Player
+    CDP -->|"Simulates 350 kbps Choke"| Player
+    Player -->|"Feeds MSE Buffers"| Video
+    Video -->|"Emits Quality Stats"| Telemetry
+    Telemetry -->|"Refreshes (1 Hz)"| HUD
+    Telemetry -->|"window.__QOE_SENTINEL__"| Reporter
+    Reporter -->|"Writes Metrics"| JSON
+    Reporter -->|"Captures Screenshot"| PNG
 ```
 
 ![QoE-Sentinel Telemetry HUD Preview](artifacts/qoe-telemetry-hud.png)
