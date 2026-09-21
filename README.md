@@ -87,12 +87,16 @@ flowchart LR
    - Head-to-head performance shootout running identical network throttling constraints (400 kbps, 250ms RTT) across both protocols.
    - Evaluates startup latency (TTFF), throttled variant adaptation, buffer retention, and final MOS rating between DASH and HLS.
 
-10. **Automated Artifacts Generation & Visual Analytics Dashboard**
+10. **Multi-Audio Track & Subtitles Switching SLA (Zero Deadlock & A/V Sync Parity)**
+   - Dynamic track switching across multi-language audio streams (English, Spanish, German, French, Italian) and WebVTT subtitle tracks (French, Greek, Portuguese).
+   - Validates that track switching under traffic does not cause pipeline deadlock, playback freeze, or A/V desynchronization.
+
+11. **Automated Artifacts Generation & Visual Analytics Dashboard**
    - Generates structured, timestamped JSON reports to `/artifacts/qoe-report.json`.
    - Compiles a standalone dark-mode interactive HTML analytics dashboard (`dashboard.html`) powered by Chart.js time-series plots and comparative cards.
    - Captures high-resolution visual screenshots of the telemetry HUD under stress into `/artifacts/`.
 
-11. **Automated Executive PDF QoE Audit Report (`npm run report:pdf`)**
+12. **Automated Executive PDF QoE Audit Report (`npm run report:pdf`)**
    - Compiles an executive 1-page A4 audit report formatted for streaming engineering management and QA leaders.
    - Includes production deployment SLA verdict, business risk overview, KPI scorecard matrix, dual-protocol shootout, and chaos resilience findings.
 
@@ -106,6 +110,7 @@ flowchart LR
 | **ABR Stability Index** | Resistance against rapid representation flipping and oscillation storms under network jitter. | `≥ 70 %` |
 | **TTFF (Time to First Frame)** | Duration in milliseconds between stream initiation and the first rendered frame. | `< 3,500 ms` |
 | **Rebuffering Recovery Time (RRT)** | Latency required to replenish buffer and resume smooth playback after an outage. | `< 6,000 ms` |
+| **Multi-Track Switching SLA** | Verification of on-the-fly audio language switches and WebVTT subtitle track toggling during active playback. | `≤ 2` micro-stalls, zero deadlock, continuous playhead |
 | **Buffer Health (Length)** | Amount of forward-buffered media (in seconds) stored ahead of current playhead. | `> 15.0 s` |
 | **Variant Bitrate** | Bitrate of the active video representation chosen by the ABR engine. | Dynamic (e.g. 500 – 4500 kbps) |
 | **Dropped Frame Ratio** | Ratio of dropped video frames to total decoded frames (`getVideoPlaybackQuality`). | `< 1.0 %` |

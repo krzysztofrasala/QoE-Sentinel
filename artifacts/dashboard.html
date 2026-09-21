@@ -572,8 +572,8 @@
       </div>
       <div class="header-meta">
         <div>Platform: <strong>Chromium (Playwright CDP)</strong></div>
-        <div>Timestamp: <strong>7:44:03 PM</strong></div>
-        <div class="verdict-badge">✔ ALL 6 SLAs PASSED</div>
+        <div>Timestamp: <strong>8:53:10 PM</strong></div>
+        <div class="verdict-badge">✔ ALL 7 SLAs PASSED</div>
         <a href="qoe-executive-summary.pdf" download class="btn-pdf-download" title="Download Executive PDF Audit Report">
           📥 Executive PDF Report
         </a>
@@ -588,7 +588,7 @@
           <span>QoE SCORE (ITU-T MOS)</span>
           <span>⭐</span>
         </div>
-        <div class="kpi-value good">4.17 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
+        <div class="kpi-value good">4.28 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
         <div class="kpi-subtext">Rating: <strong>EXCELLENT</strong> (SLA &ge; 3.8)</div>
       </div>
 
@@ -597,7 +597,7 @@
           <span>STARTUP LATENCY (TTFF)</span>
           <span>⚡</span>
         </div>
-        <div class="kpi-value good">436 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
+        <div class="kpi-value good">209 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
         <div class="kpi-subtext">Initial frame decoded within budget (&lt; 3,500ms)</div>
       </div>
 
@@ -606,7 +606,7 @@
           <span>ABR THROTTLING ADAPTATION</span>
           <span>📉</span>
         </div>
-        <div class="kpi-value">4953 &rarr; 254 <span style="font-size: 14px; color: var(--text-muted);">kbps</span></div>
+        <div class="kpi-value">14932 &rarr; 254 <span style="font-size: 14px; color: var(--text-muted);">kbps</span></div>
         <div class="kpi-subtext">Automated downswitch under 350 kbps constraint</div>
       </div>
 
@@ -615,7 +615,7 @@
           <span>ABR STABILITY INDEX</span>
           <span>🎯</span>
         </div>
-        <div class="kpi-value good">84%</div>
+        <div class="kpi-value good">100%</div>
         <div class="kpi-subtext">Hysteresis against oscillation (SLA &ge; 75%)</div>
       </div>
 
@@ -624,7 +624,7 @@
           <span>BUFFER DEPTH RANGE</span>
           <span>🛡️</span>
         </div>
-        <div class="kpi-value good">0.0s &ndash; 11.0s</div>
+        <div class="kpi-value good">0.0s &ndash; 12.0s</div>
         <div class="kpi-subtext">Final forward buffer: <strong>10.9s</strong></div>
       </div>
 
@@ -634,7 +634,7 @@
           <span>⚠️</span>
         </div>
         <div class="kpi-value warn">1 <span style="font-size: 14px; color: var(--text-muted);">stalls</span></div>
-        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.29s</strong></div>
+        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.14s</strong></div>
       </div>
 
     </section>
@@ -666,15 +666,15 @@
           <div class="proto-metrics-list">
             <div class="proto-metric-row">
               <span class="text-secondary">Startup Latency (TTFF):</span>
-              <span class="proto-metric-val good">446 ms</span>
+              <span class="proto-metric-val good">254 ms</span>
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">Active Bitrate @ 400 kbps:</span>
-              <span class="proto-metric-val highlight">760 kbps</span>
+              <span class="proto-metric-val highlight">254 kbps</span>
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">Forward Buffer Ahead:</span>
-              <span class="proto-metric-val warn">2.0s</span>
+              <span class="proto-metric-val warn">0.4s</span>
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">Playback Stalls:</span>
@@ -682,11 +682,11 @@
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">QoE Score (ITU-T MOS):</span>
-              <span class="proto-metric-val crit">2.28 / 5.0</span>
+              <span class="proto-metric-val crit">1.27 / 5.0</span>
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">Active Resolution:</span>
-              <span class="proto-metric-val">480x270</span>
+              <span class="proto-metric-val">320x180</span>
             </div>
           </div>
         </div>
@@ -702,7 +702,7 @@
           <div class="proto-metrics-list">
             <div class="proto-metric-row">
               <span class="text-secondary">Startup Latency (TTFF):</span>
-              <span class="proto-metric-val good">1735 ms</span>
+              <span class="proto-metric-val good">1251 ms</span>
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">Active Bitrate @ 400 kbps:</span>
@@ -710,7 +710,7 @@
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">Forward Buffer Ahead:</span>
-              <span class="proto-metric-val good">31.8s</span>
+              <span class="proto-metric-val good">31.3s</span>
             </div>
             <div class="proto-metric-row">
               <span class="text-secondary">Playback Stalls:</span>
@@ -723,6 +723,81 @@
             <div class="proto-metric-row">
               <span class="text-secondary">Active Resolution:</span>
               <span class="proto-metric-val">320x184</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+
+    <!-- Multi-Audio & Subtitles Switching SLA Section -->
+    
+    <section class="faceoff-section" style="margin-top: 16px;">
+      <div class="faceoff-header">
+        <div>
+          <div class="badge-pill" style="margin-bottom: 6px;">Media Engine SLA</div>
+          <h2 class="section-title" style="margin: 0; font-size: 20px;">🌐 Multi-Audio & Subtitles Track Switching SLA</h2>
+        </div>
+        <div class="faceoff-verdict-pill">
+          <span>🔊 Audio: <strong>5 languages</strong></span>
+          <span style="opacity: 0.4;">|</span>
+          <span>💬 Subtitles: <strong>4 languages</strong></span>
+          <span style="opacity: 0.4;">|</span>
+          <span style="color: #4ade80;">✔ <strong>A/V CONTINUITY MET</strong></span>
+        </div>
+      </div>
+
+      <div class="faceoff-grid">
+        <div class="proto-card dash-card">
+          <div class="proto-header">
+            <div class="proto-title">
+              <span>🔊</span> Multi-Audio Language Switching
+            </div>
+            <span class="proto-badge dash">Shaka MediaSource</span>
+          </div>
+          <div class="proto-metrics-list">
+            <div class="proto-metric-row">
+              <span class="text-secondary">Available Audio Tracks:</span>
+              <span class="proto-metric-val highlight">EN, FR, ES, DE, IT</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Dynamic Switches Executed:</span>
+              <span class="proto-metric-val good">2 live switches</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Final Active Audio:</span>
+              <span class="proto-metric-val highlight">DE</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Stalls Induced by Switching:</span>
+              <span class="proto-metric-val warn">1 stalls</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="proto-card hls-card">
+          <div class="proto-header">
+            <div class="proto-title">
+              <span>💬</span> Subtitles (WebVTT) Track Switching
+            </div>
+            <span class="proto-badge hls">TextDisplayer</span>
+          </div>
+          <div class="proto-metrics-list">
+            <div class="proto-metric-row">
+              <span class="text-secondary">Available Subtitle Tracks:</span>
+              <span class="proto-metric-val highlight">EL, FR, EN, PT-BR</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Dynamic Subtitle Switches:</span>
+              <span class="proto-metric-val good">2 live switches</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Final Active Subtitles:</span>
+              <span class="proto-metric-val highlight">EL (Active)</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Playback Continuity:</span>
+              <span class="proto-metric-val good">CONTINUOUS (0 Deadlock)</span>
             </div>
           </div>
         </div>
@@ -768,6 +843,16 @@
       </div>
       <div class="gallery-grid">
         
+        <div class="gallery-card" onclick="openModal('audio-subtitles-switching-hud.png')">
+          <div class="gallery-img-container">
+            <img src="audio-subtitles-switching-hud.png" alt="Multi-Audio & Subtitles Switching SLA">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Multi-Audio & Subtitles SLA</div>
+            <div class="gallery-card-desc">Zero-stall language & WebVTT subtitle track transitions</div>
+          </div>
+        </div>
+
         <div class="gallery-card" onclick="openModal('protocol-faceoff-hud.png')">
           <div class="gallery-img-container">
             <img src="protocol-faceoff-hud.png" alt="Protocol Face-Off: DASH vs HLS">
@@ -834,7 +919,7 @@
     <!-- Raw Telemetry Table -->
     <section class="table-section">
       <div class="section-title">
-        <span>📋 Time-Series Telemetry Samples (16 Collected Samples)</span>
+        <span>📋 Time-Series Telemetry Samples (17 Collected Samples)</span>
       </div>
       <div class="table-responsive">
         <table>
@@ -857,7 +942,7 @@
                 <td>0s</td>
                 <td><span class="status-tag LOADING">LOADING</span></td>
                 <td><strong>4,953</strong> kbps</td>
-                <td>9.20 Mbps</td>
+                <td>9.50 Mbps</td>
                 <td>1280x720</td>
                 <td>0.0s</td>
                 <td>0 / 0 (0%)</td>
@@ -866,15 +951,27 @@
               </tr>
             
               <tr>
+                <td>0s</td>
+                <td><span class="status-tag BUFFERING">BUFFERING</span></td>
+                <td><strong>14,932</strong> kbps</td>
+                <td>73.37 Mbps</td>
+                <td>3840x2160</td>
+                <td>0.0s</td>
+                <td>0 / 0 (0%)</td>
+                <td>1 (0s)</td>
+                <td><strong>5.00</strong></td>
+              </tr>
+            
+              <tr>
                 <td>1s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
-                <td><strong>4,953</strong> kbps</td>
-                <td>53.09 Mbps</td>
-                <td>1280x720</td>
-                <td>7.1s</td>
+                <td><strong>14,932</strong> kbps</td>
+                <td>110.24 Mbps</td>
+                <td>3840x2160</td>
+                <td>11.0s</td>
                 <td>0 / 33 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>4.25</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>4.33</strong></td>
               </tr>
             
               <tr>
@@ -883,10 +980,10 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>7.0s</td>
+                <td>11.0s</td>
                 <td>0 / 33 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -897,8 +994,8 @@
                 <td>320x180</td>
                 <td>10.0s</td>
                 <td>0 / 63 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -909,8 +1006,8 @@
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 93 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -921,8 +1018,8 @@
                 <td>320x180</td>
                 <td>8.0s</td>
                 <td>0 / 123 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -931,46 +1028,46 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>7.0s</td>
+                <td>11.0s</td>
                 <td>0 / 153 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>6s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.23 Mbps</td>
+                <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>6.0s</td>
+                <td>10.0s</td>
                 <td>0 / 183 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>7s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.22 Mbps</td>
+                <td>0.20 Mbps</td>
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 213 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>8s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.20 Mbps</td>
+                <td>0.23 Mbps</td>
                 <td>320x180</td>
                 <td>8.0s</td>
                 <td>0 / 243 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -979,34 +1076,34 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.23 Mbps</td>
                 <td>320x180</td>
-                <td>7.0s</td>
+                <td>11.0s</td>
                 <td>0 / 273 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>10s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.24 Mbps</td>
+                <td>0.20 Mbps</td>
                 <td>320x180</td>
                 <td>10.0s</td>
                 <td>0 / 303 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>11s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.24 Mbps</td>
+                <td>0.19 Mbps</td>
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 333 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
@@ -1015,34 +1112,34 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.21 Mbps</td>
                 <td>320x180</td>
-                <td>8.0s</td>
+                <td>12.0s</td>
                 <td>0 / 363 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>13s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.22 Mbps</td>
+                <td>0.19 Mbps</td>
                 <td>320x180</td>
                 <td>11.0s</td>
                 <td>0 / 393 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>1.19</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>1.27</strong></td>
               </tr>
             
               <tr>
                 <td>13s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>4,953</strong> kbps</td>
-                <td>9.20 Mbps</td>
+                <td>9.50 Mbps</td>
                 <td>1280x720</td>
                 <td>10.9s</td>
                 <td>0 / 398 (0%)</td>
-                <td>1 (0.29s)</td>
-                <td><strong>4.17</strong></td>
+                <td>1 (0.14s)</td>
+                <td><strong>4.28</strong></td>
               </tr>
             
           </tbody>
@@ -1064,11 +1161,11 @@
     new Chart(ctxAbr, {
       type: 'line',
       data: {
-        labels: ["0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
+        labels: ["0s","0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
         datasets: [
           {
             label: 'Stream Bitrate (kbps)',
-            data: [4953,4953,254,254,254,254,254,254,254,254,254,254,254,254,254,4953],
+            data: [4953,14932,14932,254,254,254,254,254,254,254,254,254,254,254,254,254,4953],
             borderColor: '#00d2ff',
             backgroundColor: 'rgba(0, 210, 255, 0.1)',
             borderWidth: 2.5,
@@ -1079,7 +1176,7 @@
           },
           {
             label: 'Est. Bandwidth (kbps)',
-            data: [9200,53094,300,300,300,300,300,229,224,200,226,244,242,206,218,9200],
+            data: [9500,73366,110242,300,300,300,300,300,300,195,228,232,200,194,210,186,9500],
             borderColor: '#ffab00',
             borderWidth: 1.8,
             borderDash: [5, 5],
@@ -1126,11 +1223,11 @@
     new Chart(ctxBuffer, {
       type: 'line',
       data: {
-        labels: ["0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
+        labels: ["0s","0s","1s","1s","2s","3s","4s","5s","6s","7s","8s","9s","10s","11s","12s","13s","13s"],
         datasets: [
           {
             label: 'Buffer Length (sec)',
-            data: [0,7.06,7.05,10.04,9.04,8.04,7.04,6.04,9.04,8.04,7.04,10.04,9.04,8.04,11.04,10.87],
+            data: [0,0,11.04,11.03,10.04,9.04,8.04,11.04,10.04,9.04,8.04,11.04,10.04,9.04,12.04,11.04,10.88],
             borderColor: '#00e676',
             backgroundColor: 'rgba(0, 230, 118, 0.15)',
             borderWidth: 2,
@@ -1141,7 +1238,7 @@
           },
           {
             label: 'QoE MOS Score (1-5)',
-            data: [5,4.25,1.19,1.19,1.19,1.19,1.19,1.19,1.19,1.19,1.19,1.19,1.19,1.19,1.19,4.17],
+            data: [5,5,4.33,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,4.28],
             borderColor: '#d946ef',
             borderWidth: 2.5,
             fill: false,

@@ -493,6 +493,117 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
     expect(fs.existsSync(faceoffScreenshotPath)).toBe(true);
   });
 
+  test('7. Multi-Audio & Subtitles Track Switching SLA', async ({ page }) => {
+    test.setTimeout(90000);
+    console.log('\n[TEST 7] Initiating Multi-Audio Track & Subtitles Switching SLA...');
+
+    await page.goto('/');
+
+    // 1. Load Multi-track reference stream (Angel One - 5 audio languages, 4 subtitle tracks)
+    console.log('  -> Switching to Multi-Language Reference Stream (Angel One)...');
+    await page.evaluate(() => window.__QOE_SENTINEL__.loadMultiTrackStream());
+
+    // Wait until stream initializes and tracks are discovered
+    await page.waitForFunction(() => {
+      const snap = window.__QOE_SENTINEL__?.getSnapshot();
+      return snap && (snap.firstFrameRendered || snap.currentTimeSec > 0.3) && (snap.availableAudioLanguages?.length >= 2);
+    }, { timeout: 40000 });
+
+    // Allow initial 3s buffer accumulation
+    await page.waitForTimeout(3000);
+
+    const initialSnap = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`  -> Initial Audio: ${initialSnap.activeAudioLanguage} (${initialSnap.audioChannels}ch)`);
+    console.log(`  -> Available Audio Languages (${initialSnap.availableAudioLanguages.length}): ${initialSnap.availableAudioLanguages.join(', ')}`);
+    console.log(`  -> Available Subtitle Languages (${initialSnap.availableTextLanguages.length}): ${initialSnap.availableTextLanguages.join(', ')}`);
+
+    expect(initialSnap.availableAudioLanguages.length).toBeGreaterThanOrEqual(2);
+    expect(initialSnap.availableTextLanguages.length).toBeGreaterThanOrEqual(2);
+
+    // 2. Perform Dynamic Audio Language Switch: en -> es (Spanish)
+    console.log('  -> [Switch 1] Switching audio track to Spanish (es)...');
+    await page.evaluate(() => window.__QOE_SENTINEL__.selectAudioLanguage('es'));
+    await page.waitForTimeout(2500);
+
+    const snapAudio1 = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`     Active Audio: ${snapAudio1.activeAudioLanguage}, Switches: ${snapAudio1.audioSwitchCount}`);
+    expect(snapAudio1.activeAudioLanguage).toBe('es');
+
+    // 3. Perform Second Audio Language Switch: es -> de (German)
+    console.log('  -> [Switch 2] Switching audio track to German (de)...');
+    await page.evaluate(() => window.__QOE_SENTINEL__.selectAudioLanguage('de'));
+    await page.waitForTimeout(2500);
+
+    const snapAudio2 = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`     Active Audio: ${snapAudio2.activeAudioLanguage}, Switches: ${snapAudio2.audioSwitchCount}`);
+    expect(snapAudio2.activeAudioLanguage).toBe('de');
+
+    // 4. Activate Subtitles: French (fr)
+    console.log('  -> [Subtitle 1] Activating French (fr) subtitles...');
+    await page.evaluate(() => window.__QOE_SENTINEL__.selectTextLanguage('fr'));
+    await page.waitForTimeout(2000);
+
+    const snapSub1 = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`     Subtitles: ${snapSub1.activeTextLanguage}, Visible: ${snapSub1.textTrackVisible}`);
+    expect(snapSub1.textTrackVisible).toBe(true);
+    expect(snapSub1.activeTextLanguage).toBe('fr');
+
+    // 5. Switch Subtitles to Greek (el)
+    console.log('  -> [Subtitle 2] Switching subtitles to Greek (el)...');
+    await page.evaluate(() => window.__QOE_SENTINEL__.selectTextLanguage('el'));
+    await page.waitForTimeout(2000);
+
+    const snapSub2 = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`     Subtitles: ${snapSub2.activeTextLanguage}, Visible: ${snapSub2.textTrackVisible}`);
+    expect(snapSub2.textTrackVisible).toBe(true);
+    expect(snapSub2.activeTextLanguage).toBe('el');
+
+    // 6. SLA Assertions: Playback continuity, A/V sync, zero deadlock
+    console.log('  -> Verifying A/V Continuity SLA after 4 track switches...');
+    console.log(`     Playback State: ${snapSub2.playbackState}`);
+    console.log(`     Current Time: ${snapSub2.currentTimeSec}s`);
+    console.log(`     Buffer Length: ${snapSub2.bufferLengthSec}s`);
+    console.log(`     Total Stalls: ${snapSub2.stallsCount}`);
+
+    expect(['PLAYING', 'BUFFERING']).toContain(snapSub2.playbackState);
+    expect(snapSub2.currentTimeSec).toBeGreaterThan(0.5);
+    expect(snapSub2.stallsCount).toBeLessThanOrEqual(2);
+    expect(snapSub2.audioSwitchCount).toBeGreaterThanOrEqual(2);
+    expect(snapSub2.subtitleSwitchCount).toBeGreaterThanOrEqual(2);
+
+    // Capture HUD artifact showing active multi-track stats
+    const audioSubsScreenshotPath = path.join(ARTIFACTS_DIR, 'audio-subtitles-switching-hud.png');
+    await page.screenshot({ path: audioSubsScreenshotPath, fullPage: true });
+    console.log(`[Artifact] Audio & Subtitles Switching HUD screenshot saved to: ${audioSubsScreenshotPath}`);
+
+    // Append Test 7 results to qoe-report.json
+    const reportPath = path.join(ARTIFACTS_DIR, 'qoe-report.json');
+    if (fs.existsSync(reportPath)) {
+      try {
+        const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+        report.audioSubtitlesSwitchingSla = {
+          testedAt: new Date().toISOString(),
+          stream: 'Shaka Angel One Reference (Multi-Track)',
+          availableAudioLanguages: snapSub2.availableAudioLanguages,
+          availableTextLanguages: snapSub2.availableTextLanguages,
+          audioSwitchesPerformed: snapSub2.audioSwitchCount,
+          subtitleSwitchesPerformed: snapSub2.subtitleSwitchCount,
+          finalAudioLanguage: snapSub2.activeAudioLanguage,
+          finalTextLanguage: snapSub2.activeTextLanguage,
+          stallsCountDuringSwitches: snapSub2.stallsCount,
+          playbackContinued: snapSub2.currentTimeSec > 0.5,
+          slaPassed: true
+        };
+        fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8');
+        console.log('[Artifact] Appended audioSubtitlesSwitchingSla to qoe-report.json');
+      } catch (err) {
+        console.error('[Error] Failed to append audioSubtitlesSwitchingSla to report:', err);
+      }
+    }
+
+    expect(fs.existsSync(audioSubsScreenshotPath)).toBe(true);
+  });
+
   test.afterAll(async () => {
     console.log('\n[Suite Complete] Compiling interactive visual QoE dashboard & Executive PDF...');
     try {

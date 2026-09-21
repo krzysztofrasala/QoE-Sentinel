@@ -322,6 +322,64 @@ video#video-player {
   color: var(--cyan-accent);
 }
 
+.media-selectors-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.track-select-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.track-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.track-select {
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.track-select:hover, .track-select:focus {
+  border-color: var(--cyan-accent);
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.btn-cc {
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  border-radius: 4px;
+}
+
+.btn-cc.active {
+  background: var(--cyan-accent);
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+}
+
 /* Chaos Engineering Network Simulation Matrix */
 .chaos-matrix-panel {
   background: var(--bg-card);

@@ -83,7 +83,15 @@
           <div class="buffer-bar-wrapper">
             <div class="buffer-bar-fill" id="hud-buffer-fill"></div>
           </div>
-          <div class="hud-row" style="margin-top: 6px;">
+          <div class="hud-row">
+            <span class="hud-label">Audio Track:</span>
+            <span class="hud-val highlight" id="hud-audio">en (Default)</span>
+          </div>
+          <div class="hud-row">
+            <span class="hud-label">Subtitles:</span>
+            <span class="hud-val" id="hud-subtitles">Off</span>
+          </div>
+          <div class="hud-row">
             <span class="hud-label">Dropped / Total Frames:</span>
             <span class="hud-val" id="hud-dropped">0 / 0 (0%)</span>
           </div>
@@ -111,8 +119,24 @@
         <button class="btn" id="btn-proto-hls" title="Switch to Apple HLS manifest">
           🍏 Apple HLS
         </button>
+        <button class="btn" id="btn-proto-multiaudio" title="Switch to Multi-Language Reference Stream (5 Audio, 4 Subs)">
+          🌐 Multi-Track (Angel One)
+        </button>
       </div>
-      <div class="control-group">
+      <div class="control-group media-selectors-group">
+        <div class="track-select-wrap">
+          <label for="select-audio" class="track-label">🔊 Audio:</label>
+          <select id="select-audio" class="track-select" title="Select Audio Language">
+            <option value="en">EN</option>
+          </select>
+        </div>
+        <div class="track-select-wrap">
+          <label for="select-subtitles" class="track-label">💬 Subs:</label>
+          <select id="select-subtitles" class="track-select" title="Select Subtitle Track">
+            <option value="off">Off</option>
+          </select>
+          <button class="btn btn-sm btn-cc" id="btn-toggle-subtitles" title="Toggle Subtitles On/Off">CC</button>
+        </div>
         <span id="stream-label" style="font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono);">
           Stream: Akamai BBB DASH Multi-bitrate
         </span>

@@ -5,6 +5,7 @@
 
 const DEFAULT_DASH_MANIFEST = 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd';
 const DEFAULT_HLS_MANIFEST = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+const MULTI_TRACK_DASH_MANIFEST = 'https://storage.googleapis.com/shaka-demo-assets/angel-one/dash.mpd';
 
 class QoETelemetrySentinel {
   constructor() {
@@ -37,6 +38,14 @@ class QoETelemetrySentinel {
       abrStabilityIndex: 100,
       mosScore: 5.0,
       isUserSeeking: false,
+      activeAudioLanguage: 'en',
+      audioChannels: 2,
+      availableAudioLanguages: [],
+      audioSwitchCount: 0,
+      activeTextLanguage: 'none',
+      availableTextLanguages: [],
+      textTrackVisible: false,
+      subtitleSwitchCount: 0,
       history: []
     };
 
@@ -149,8 +158,18 @@ class QoETelemetrySentinel {
         }
       }
 
+      this.refreshMediaTracks();
       this.collectTelemetrySample();
       this.state.abrStabilityIndex = this.calculateAbrStabilityIndex();
+    });
+
+    // Track changes & subtitle visibility events
+    this.player.addEventListener('trackschanged', () => {
+      this.refreshMediaTracks();
+    });
+
+    this.player.addEventListener('texttrackvisibility', () => {
+      this.refreshMediaTracks();
     });
 
     // Native video pipeline events for QoE tracking
@@ -225,13 +244,18 @@ class QoETelemetrySentinel {
 
   async switchProtocol(protocol) {
     const target = (protocol || '').toUpperCase();
-    if (target !== 'DASH' && target !== 'HLS') {
-      console.warn(`[QoE-Sentinel] Unsupported protocol: ${protocol}`);
-      return;
+    let manifestUrl = DEFAULT_DASH_MANIFEST;
+    if (target === 'HLS') {
+      manifestUrl = DEFAULT_HLS_MANIFEST;
+      this.state.protocol = 'HLS';
+    } else if (target === 'MULTI') {
+      manifestUrl = MULTI_TRACK_DASH_MANIFEST;
+      this.state.protocol = 'DASH';
+    } else {
+      manifestUrl = DEFAULT_DASH_MANIFEST;
+      this.state.protocol = 'DASH';
     }
-    const manifestUrl = target === 'HLS' ? DEFAULT_HLS_MANIFEST : DEFAULT_DASH_MANIFEST;
-    console.log(`[QoE-Sentinel] Switching protocol to ${target}: ${manifestUrl}`);
-    this.state.protocol = target;
+    console.log(`[QoE-Sentinel] Switching stream/protocol to ${target}: ${manifestUrl}`);
 
     // Reset performance metrics for the fresh stream evaluation
     this.state.stallsCount = 0;
@@ -247,6 +271,8 @@ class QoETelemetrySentinel {
     this.state.droppedFrames = 0;
     this.state.totalFrames = 0;
     this.state.dropRatioPercent = 0;
+    this.state.audioSwitchCount = 0;
+    this.state.subtitleSwitchCount = 0;
 
     await this.loadStream(manifestUrl);
     this.updateProtocolUI();
@@ -254,26 +280,35 @@ class QoETelemetrySentinel {
 
   updateProtocolUI() {
     const isHls = this.state.protocol === 'HLS';
+    const isMulti = this.state.manifestUrl === MULTI_TRACK_DASH_MANIFEST;
+
     const headerProtocol = document.getElementById('header-stream-protocol');
     if (headerProtocol) {
-      headerProtocol.textContent = isHls ? 'HLS / ABR Active' : 'DASH / ABR Active';
+      headerProtocol.textContent = isMulti
+        ? 'DASH / Multi-Track Active'
+        : (isHls ? 'HLS / ABR Active' : 'DASH / ABR Active');
     }
 
     const streamLabel = document.getElementById('stream-label');
     if (streamLabel) {
-      streamLabel.textContent = isHls 
-        ? 'Stream: Apple HLS Multi-bitrate (Mux BBB)' 
-        : 'Stream: Akamai BBB DASH Multi-bitrate';
+      streamLabel.textContent = isMulti
+        ? 'Stream: Shaka Angel One Multi-Language (5 Audio, 4 Subs)'
+        : (isHls ? 'Stream: Apple HLS Multi-bitrate (Mux BBB)' : 'Stream: Akamai BBB DASH Multi-bitrate');
     }
 
     const btnDash = document.getElementById('btn-proto-dash');
     const btnHls = document.getElementById('btn-proto-hls');
+    const btnMulti = document.getElementById('btn-proto-multiaudio');
     if (btnDash && btnHls) {
-      if (isHls) {
-        btnDash.classList.remove('active', 'btn-primary');
+      btnDash.classList.remove('active', 'btn-primary');
+      btnHls.classList.remove('active', 'btn-primary');
+      if (btnMulti) btnMulti.classList.remove('active', 'btn-primary');
+
+      if (isMulti && btnMulti) {
+        btnMulti.classList.add('active', 'btn-primary');
+      } else if (isHls) {
         btnHls.classList.add('active', 'btn-primary');
       } else {
-        btnHls.classList.remove('active', 'btn-primary');
         btnDash.classList.add('active', 'btn-primary');
       }
     }
@@ -386,9 +421,129 @@ class QoETelemetrySentinel {
         this.videoElement.muted = true;
         await this.videoElement.play();
       }
+
+      this.refreshMediaTracks();
     } catch (error) {
       console.error('[QoE-Sentinel] Error loading manifest:', error);
       this.state.playbackState = 'LOAD_FAILED';
+    }
+  }
+
+  refreshMediaTracks() {
+    if (!this.player) return;
+    try {
+      this.state.availableAudioLanguages = this.player.getAudioLanguages() || [];
+      this.state.availableTextLanguages = this.player.getTextLanguages() || [];
+
+      const tracks = this.player.getVariantTracks() || [];
+      const activeVariant = tracks.find(t => t.active);
+      if (activeVariant) {
+        this.state.activeAudioLanguage = activeVariant.language || 'en';
+        this.state.audioChannels = activeVariant.channelsCount || 2;
+      }
+
+      const textTracks = this.player.getTextTracks() || [];
+      const activeText = textTracks.find(t => t.active);
+      this.state.activeTextLanguage = activeText ? activeText.language : 'none';
+      this.state.textTrackVisible = this.player.isTextTrackVisible();
+
+      this.updateTrackControlsUI();
+    } catch (err) {
+      console.warn('[QoE-Sentinel] Could not inspect media tracks:', err);
+    }
+  }
+
+  selectAudioLanguage(language) {
+    if (!this.player) return;
+    console.log(`[QoE-Sentinel] Switching audio language to: ${language}`);
+    this.player.selectAudioLanguage(language);
+    this.state.activeAudioLanguage = language;
+    this.state.audioSwitchCount = (this.state.audioSwitchCount || 0) + 1;
+    this.refreshMediaTracks();
+    this.updateUI();
+  }
+
+  selectTextLanguage(language) {
+    if (!this.player) return;
+    console.log(`[QoE-Sentinel] Switching subtitle language to: ${language}`);
+    if (language === 'off' || language === 'none') {
+      this.setTextTrackVisibility(false);
+      return;
+    }
+    this.player.selectTextLanguage(language);
+    this.player.setTextTrackVisibility(true);
+    this.state.activeTextLanguage = language;
+    this.state.textTrackVisible = true;
+    this.state.subtitleSwitchCount = (this.state.subtitleSwitchCount || 0) + 1;
+    this.refreshMediaTracks();
+    this.updateUI();
+  }
+
+  setTextTrackVisibility(visible) {
+    if (!this.player) return;
+    console.log(`[QoE-Sentinel] Setting subtitle visibility to: ${visible}`);
+    this.player.setTextTrackVisibility(visible);
+    this.state.textTrackVisible = visible;
+    if (!visible) {
+      this.state.activeTextLanguage = 'none';
+    }
+    this.refreshMediaTracks();
+    this.updateUI();
+  }
+
+  getAudioLanguages() {
+    return this.state.availableAudioLanguages || [];
+  }
+
+  getTextLanguages() {
+    return this.state.availableTextLanguages || [];
+  }
+
+  updateTrackControlsUI() {
+    const audioSelect = document.getElementById('select-audio');
+    if (audioSelect) {
+      const languages = (this.state.availableAudioLanguages && this.state.availableAudioLanguages.length > 0)
+        ? this.state.availableAudioLanguages
+        : [this.state.activeAudioLanguage || 'en'];
+      
+      const existingOptions = Array.from(audioSelect.options).map(o => o.value);
+      if (JSON.stringify(existingOptions) !== JSON.stringify(languages)) {
+        audioSelect.innerHTML = '';
+        languages.forEach(lang => {
+          const opt = document.createElement('option');
+          opt.value = lang;
+          opt.textContent = lang.toUpperCase();
+          audioSelect.appendChild(opt);
+        });
+      }
+      if (this.state.activeAudioLanguage) {
+        audioSelect.value = this.state.activeAudioLanguage;
+      }
+    }
+
+    const subSelect = document.getElementById('select-subtitles');
+    if (subSelect) {
+      const languages = ['off', ...(this.state.availableTextLanguages || [])];
+      const existingOptions = Array.from(subSelect.options).map(o => o.value);
+      if (JSON.stringify(existingOptions) !== JSON.stringify(languages)) {
+        subSelect.innerHTML = '';
+        languages.forEach(lang => {
+          const opt = document.createElement('option');
+          opt.value = lang;
+          opt.textContent = lang === 'off' ? 'Off' : lang.toUpperCase();
+          subSelect.appendChild(opt);
+        });
+      }
+      subSelect.value = this.state.textTrackVisible ? (this.state.activeTextLanguage || 'off') : 'off';
+    }
+
+    const ccBtn = document.getElementById('btn-toggle-subtitles');
+    if (ccBtn) {
+      if (this.state.textTrackVisible) {
+        ccBtn.classList.add('active');
+      } else {
+        ccBtn.classList.remove('active');
+      }
     }
   }
 
@@ -555,6 +710,14 @@ class QoETelemetrySentinel {
       adaptationCount: this.state.adaptationCount,
       abrStabilityIndex: this.state.abrStabilityIndex,
       mosScore: this.state.mosScore,
+      activeAudioLanguage: this.state.activeAudioLanguage,
+      audioChannels: this.state.audioChannels,
+      availableAudioLanguages: this.state.availableAudioLanguages,
+      audioSwitchCount: this.state.audioSwitchCount,
+      activeTextLanguage: this.state.activeTextLanguage,
+      availableTextLanguages: this.state.availableTextLanguages,
+      textTrackVisible: this.state.textTrackVisible,
+      subtitleSwitchCount: this.state.subtitleSwitchCount,
       currentTimeSec: parseFloat(this.videoElement.currentTime.toFixed(2)),
       durationSec: parseFloat((this.videoElement.duration || 0).toFixed(2))
     };
@@ -586,6 +749,17 @@ class QoETelemetrySentinel {
     updateEl('hud-bandwidth', `${(s.estimatedBandwidthKbps / 1000).toFixed(2)} Mbps`);
     updateEl('hud-buffer', `${s.bufferLengthSec.toFixed(1)} s`, s.bufferLengthSec > 10 ? 'good' : (s.bufferLengthSec > 3 ? 'warn' : 'crit'));
     updateEl('hud-resolution', s.resolution);
+
+    const audioTrackLabel = s.availableAudioLanguages && s.availableAudioLanguages.length > 1
+      ? `${(s.activeAudioLanguage || 'en').toUpperCase()} (${s.audioChannels || 2}ch, ${s.availableAudioLanguages.length} tracks)`
+      : `${(s.activeAudioLanguage || 'en').toUpperCase()} (${s.audioChannels || 2}ch)`;
+    updateEl('hud-audio', audioTrackLabel, 'highlight');
+
+    const subsLabel = s.textTrackVisible
+      ? `${(s.activeTextLanguage || 'EN').toUpperCase()} (Active, ${s.availableTextLanguages ? s.availableTextLanguages.length : 0} available)`
+      : `Off (${s.availableTextLanguages ? s.availableTextLanguages.length : 0} available)`;
+    updateEl('hud-subtitles', subsLabel, s.textTrackVisible ? 'good' : '');
+
     updateEl('hud-dropped', `${s.droppedFrames} / ${s.totalFrames} (${s.dropRatioPercent}%)`, s.dropRatioPercent < 1 ? 'good' : 'warn');
     updateEl('hud-stalls', `${s.stallsCount} (${s.totalStallDurationSec}s)`, s.stallsCount === 0 ? 'good' : 'crit');
 
@@ -652,6 +826,12 @@ window.addEventListener('DOMContentLoaded', () => {
     loadStream: (url) => window.sentinel.loadStream(url),
     switchProtocol: (proto) => window.sentinel.switchProtocol(proto),
     applyChaosProfile: (id) => window.sentinel.applyChaosProfile(id),
+    selectAudioLanguage: (lang) => window.sentinel.selectAudioLanguage(lang),
+    selectTextLanguage: (lang) => window.sentinel.selectTextLanguage(lang),
+    setTextTrackVisibility: (v) => window.sentinel.setTextTrackVisibility(v),
+    getAudioLanguages: () => window.sentinel.getAudioLanguages(),
+    getTextLanguages: () => window.sentinel.getTextLanguages(),
+    loadMultiTrackStream: () => window.sentinel.loadStream(MULTI_TRACK_DASH_MANIFEST),
     player: () => window.sentinel.player,
     video: () => window.sentinel.videoElement
   };
@@ -675,7 +855,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Protocol switcher buttons
+  // Protocol & Stream switcher buttons
   const btnDash = document.getElementById('btn-proto-dash');
   if (btnDash) {
     btnDash.addEventListener('click', () => window.sentinel.switchProtocol('DASH'));
@@ -684,6 +864,33 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnHls = document.getElementById('btn-proto-hls');
   if (btnHls) {
     btnHls.addEventListener('click', () => window.sentinel.switchProtocol('HLS'));
+  }
+
+  const btnMulti = document.getElementById('btn-proto-multiaudio');
+  if (btnMulti) {
+    btnMulti.addEventListener('click', () => window.sentinel.switchProtocol('MULTI'));
+  }
+
+  // Audio & Subtitle track controls
+  const selectAudio = document.getElementById('select-audio');
+  if (selectAudio) {
+    selectAudio.addEventListener('change', (e) => {
+      window.sentinel.selectAudioLanguage(e.target.value);
+    });
+  }
+
+  const selectSubs = document.getElementById('select-subtitles');
+  if (selectSubs) {
+    selectSubs.addEventListener('change', (e) => {
+      window.sentinel.selectTextLanguage(e.target.value);
+    });
+  }
+
+  const btnCC = document.getElementById('btn-toggle-subtitles');
+  if (btnCC) {
+    btnCC.addEventListener('click', () => {
+      window.sentinel.setTextTrackVisibility(!window.sentinel.state.textTrackVisible);
+    });
   }
 
   // Chaos network profile buttons
