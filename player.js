@@ -40,6 +40,16 @@ class QoETelemetrySentinel {
       history: []
     };
 
+    // Live Chaos Network Simulation State
+    this.chaosProfile = {
+      id: 'fiber',
+      name: 'Fiber 1Gbps (Clean)',
+      latencyMs: 0,
+      bandwidthKbps: 0,
+      isBlackout: false,
+      jitterInterval: null
+    };
+
     this.timerId = null;
   }
 
@@ -72,6 +82,31 @@ class QoETelemetrySentinel {
         enabled: true,
         defaultBandwidthEstimate: 3000000, // 3 Mbps
         switchInterval: 2 // ABR adaptation evaluation interval (seconds)
+      }
+    });
+
+    // Chaos Engineering live networking simulation filters
+    const netEngine = this.player.getNetworkingEngine();
+    netEngine.registerRequestFilter(async (type, request) => {
+      if (this.chaosProfile.isBlackout) {
+        throw new shaka.util.Error(
+          shaka.util.Error.Severity.RECOVERABLE,
+          shaka.util.Error.Category.NETWORK,
+          shaka.util.Error.Code.HTTP_ERROR
+        );
+      }
+      if (this.chaosProfile.latencyMs > 0) {
+        await new Promise(res => setTimeout(res, this.chaosProfile.latencyMs));
+      }
+    });
+
+    netEngine.registerResponseFilter(async (type, response) => {
+      if (this.chaosProfile.bandwidthKbps > 0 && response.data && response.data.byteLength > 0) {
+        const bytes = response.data.byteLength;
+        const simulatedMs = Math.round((bytes * 8) / this.chaosProfile.bandwidthKbps);
+        if (simulatedMs > 20) {
+          await new Promise(res => setTimeout(res, Math.min(5000, simulatedMs)));
+        }
       }
     });
 
@@ -242,6 +277,87 @@ class QoETelemetrySentinel {
         btnDash.classList.add('active', 'btn-primary');
       }
     }
+  }
+
+  applyChaosProfile(profileId) {
+    if (this.chaosProfile.jitterInterval) {
+      clearInterval(this.chaosProfile.jitterInterval);
+      this.chaosProfile.jitterInterval = null;
+    }
+
+    this.chaosProfile.id = profileId;
+    this.chaosProfile.isBlackout = false;
+
+    if (profileId === 'metro') {
+      this.chaosProfile.name = 'Metro Underground (300k / 400ms)';
+      this.chaosProfile.latencyMs = 400;
+      this.chaosProfile.bandwidthKbps = 300;
+    } else if (profileId === 'elevator') {
+      this.chaosProfile.name = 'Elevator Outage (6s Drop Active)';
+      this.chaosProfile.isBlackout = true;
+      this.chaosProfile.latencyMs = 0;
+      this.chaosProfile.bandwidthKbps = 0;
+
+      setTimeout(() => {
+        if (this.chaosProfile.id === 'elevator') {
+          console.log('[Chaos Lab] Elevator blackout ended, restoring transport...');
+          this.chaosProfile.isBlackout = false;
+          this.chaosProfile.name = 'Elevator Outage (Restored / Recovering)';
+          this.updateChaosUI();
+        }
+      }, 6000);
+    } else if (profileId === 'airplane') {
+      this.chaosProfile.name = 'Satellite Wi-Fi (800k / 750ms)';
+      this.chaosProfile.latencyMs = 750;
+      this.chaosProfile.bandwidthKbps = 800;
+    } else if (profileId === 'stadium') {
+      this.chaosProfile.name = 'Stadium 4G Jitter (ABR Chaos)';
+      this.chaosProfile.latencyMs = 200;
+      this.chaosProfile.bandwidthKbps = 350;
+
+      let surge = false;
+      this.chaosProfile.jitterInterval = setInterval(() => {
+        surge = !surge;
+        this.chaosProfile.bandwidthKbps = surge ? 8000 : 250;
+        this.chaosProfile.latencyMs = surge ? 60 : 350;
+        console.log(`[Chaos Lab] Stadium Jitter fluctuation -> ${this.chaosProfile.bandwidthKbps} kbps`);
+      }, 3000);
+    } else {
+      this.chaosProfile.name = 'Fiber 1Gbps (Clean)';
+      this.chaosProfile.latencyMs = 0;
+      this.chaosProfile.bandwidthKbps = 0;
+    }
+
+    console.log(`[Chaos Lab] Transport profile applied: ${this.chaosProfile.name}`);
+    this.updateChaosUI();
+  }
+
+  updateChaosUI() {
+    const statusText = document.getElementById('chaos-status-text');
+    if (statusText) {
+      statusText.innerHTML = `Transport: <strong>${this.chaosProfile.name}</strong>`;
+    }
+
+    const dot = document.getElementById('chaos-pulse-dot');
+    if (dot) {
+      dot.className = 'chaos-pulse';
+      if (this.chaosProfile.isBlackout) {
+        dot.classList.add('blackout');
+      } else if (this.chaosProfile.bandwidthKbps > 0) {
+        dot.classList.add('throttled');
+      }
+    }
+
+    const buttons = document.querySelectorAll('.btn-chaos');
+    buttons.forEach(btn => {
+      const pid = btn.getAttribute('data-profile');
+      btn.classList.remove('active', 'throttled', 'blackout');
+      if (pid === this.chaosProfile.id) {
+        btn.classList.add('active');
+        if (this.chaosProfile.isBlackout) btn.classList.add('blackout');
+        else if (this.chaosProfile.bandwidthKbps > 0) btn.classList.add('throttled');
+      }
+    });
   }
 
   async loadStream(manifestUrl) {
@@ -535,6 +651,7 @@ window.addEventListener('DOMContentLoaded', () => {
     toggleHud: () => window.sentinel.toggleHud(),
     loadStream: (url) => window.sentinel.loadStream(url),
     switchProtocol: (proto) => window.sentinel.switchProtocol(proto),
+    applyChaosProfile: (id) => window.sentinel.applyChaosProfile(id),
     player: () => window.sentinel.player,
     video: () => window.sentinel.videoElement
   };
@@ -568,6 +685,15 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnHls) {
     btnHls.addEventListener('click', () => window.sentinel.switchProtocol('HLS'));
   }
+
+  // Chaos network profile buttons
+  const chaosButtons = document.querySelectorAll('.btn-chaos');
+  chaosButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const profileId = btn.getAttribute('data-profile');
+      window.sentinel.applyChaosProfile(profileId);
+    });
+  });
 
   // Keyboard shortcut 'S' for HUD
   window.addEventListener('keydown', (e) => {

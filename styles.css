@@ -322,6 +322,124 @@ video#video-player {
   color: var(--cyan-accent);
 }
 
+/* Chaos Engineering Network Simulation Matrix */
+.chaos-matrix-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chaos-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chaos-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chaos-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(217, 70, 239, 0.15);
+  color: var(--purple-accent);
+  border: 1px solid rgba(217, 70, 239, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.chaos-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+.chaos-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.chaos-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-healthy);
+  box-shadow: 0 0 8px var(--status-healthy);
+}
+
+.chaos-pulse.throttled {
+  background: var(--status-warning);
+  box-shadow: 0 0 8px var(--status-warning);
+}
+
+.chaos-pulse.blackout {
+  background: var(--status-critical);
+  box-shadow: 0 0 8px var(--status-critical);
+}
+
+.chaos-buttons-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-chaos {
+  font-size: 12px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+}
+
+.btn-chaos:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-chaos.active {
+  background: rgba(0, 210, 255, 0.15);
+  border-color: var(--cyan-accent);
+  color: var(--cyan-accent);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+}
+
+.btn-chaos.active.blackout {
+  background: rgba(255, 23, 68, 0.15);
+  border-color: var(--status-critical);
+  color: var(--status-critical);
+  box-shadow: 0 0 10px rgba(255, 23, 68, 0.3);
+}
+
+.btn-chaos.active.throttled {
+  background: rgba(255, 171, 0, 0.15);
+  border-color: var(--status-warning);
+  color: var(--status-warning);
+  box-shadow: 0 0 10px rgba(255, 171, 0, 0.3);
+}
+
 /* KPI Summary Cards */
 .kpi-cards-grid {
   display: grid;

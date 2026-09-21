@@ -119,6 +119,37 @@
       </div>
     </section>
 
+    <!-- Chaos Engineering Network Matrix -->
+    <section class="chaos-matrix-panel" aria-label="Chaos Network Simulation Matrix">
+      <div class="chaos-panel-header">
+        <div class="chaos-title-group">
+          <span class="chaos-badge">CHAOS LAB</span>
+          <span class="chaos-title">Live Transport Simulator</span>
+        </div>
+        <div class="chaos-status-indicator">
+          <span class="chaos-pulse" id="chaos-pulse-dot"></span>
+          <span id="chaos-status-text">Transport: <strong>Fiber 1Gbps (Clean)</strong></span>
+        </div>
+      </div>
+      <div class="chaos-buttons-grid">
+        <button class="btn btn-chaos active" data-profile="fiber" id="btn-chaos-fiber" title="Zero added latency, unlimited throughput">
+          🚀 Fiber 1Gbps (Clean)
+        </button>
+        <button class="btn btn-chaos" data-profile="metro" id="btn-chaos-metro" title="300 kbps choke + 400ms latency">
+          🚇 Metro (300k / 400ms)
+        </button>
+        <button class="btn btn-chaos" data-profile="elevator" id="btn-chaos-elevator" title="6-second complete connection blackout">
+          🛗 Elevator Outage (6s Drop)
+        </button>
+        <button class="btn btn-chaos" data-profile="airplane" id="btn-chaos-airplane" title="800 kbps throughput + 750ms satellite latency">
+          ✈️ Satellite Wi-Fi (800k / 750ms)
+        </button>
+        <button class="btn btn-chaos" data-profile="stadium" id="btn-chaos-stadium" title="Rapid 4G jitter between 250 kbps and 8 Mbps">
+          🏟️ Stadium 4G Jitter (ABR Chaos)
+        </button>
+      </div>
+    </section>
+
     <!-- KPI Summary Dashboard -->
     <section class="kpi-cards-grid" aria-label="Key Performance Indicators">
       
