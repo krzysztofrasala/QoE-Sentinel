@@ -92,6 +92,10 @@ flowchart LR
    - Compiles a standalone dark-mode interactive HTML analytics dashboard (`dashboard.html`) powered by Chart.js time-series plots and comparative cards.
    - Captures high-resolution visual screenshots of the telemetry HUD under stress into `/artifacts/`.
 
+11. **Automated Executive PDF QoE Audit Report (`npm run report:pdf`)**
+   - Compiles an executive 1-page A4 audit report formatted for streaming engineering management and QA leaders.
+   - Includes production deployment SLA verdict, business risk overview, KPI scorecard matrix, dual-protocol shootout, and chaos resilience findings.
+
 ---
 
 ## 📊 Core QoE Metrics Tracked
@@ -118,6 +122,7 @@ QoE-Sentinel/
 ├── artifacts/                     # Generated test reports & screenshots
 │   ├── dashboard.html             # Standalone interactive Chart.js analytics dashboard
 │   ├── index.html                 # Direct GitHub Pages entrypoint
+│   ├── qoe-executive-summary.pdf  # 1-page A4 corporate executive audit report
 │   ├── qoe-report.json            # Machine-readable QoE benchmark metrics
 │   ├── protocol-faceoff-hud.png   # DASH vs HLS comparative benchmark HUD
 │   ├── qoe-telemetry-hud.png      # High-res screenshot of live Stats for Nerds HUD
@@ -126,7 +131,8 @@ QoE-Sentinel/
 │   ├── offline-recovery-hud.png   # Network outage recovery screenshot
 │   └── rollercoaster-jitter-hud.png # Bandwidth jitter turbulence screenshot
 ├── scripts/
-│   └── generate-dashboard.js      # Analytics dashboard HTML generator
+│   ├── generate-dashboard.js      # Analytics dashboard HTML generator
+│   └── generate-pdf-report.js     # Executive PDF report compiler (A4 print engine)
 ├── tests/
 │   └── qoe-streaming.spec.js      # Playwright E2E QoE 6-test suite
 ├── index.html                     # HTML5 streaming test stage with Shaka Player

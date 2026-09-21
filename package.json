@@ -10,7 +10,8 @@
     "test:debug": "npx playwright test --debug",
     "test:report": "npx playwright show-report",
     "dashboard": "node scripts/generate-dashboard.js && open artifacts/dashboard.html",
-    "report:dashboard": "open artifacts/dashboard.html"
+    "report:dashboard": "open artifacts/dashboard.html",
+    "report:pdf": "node scripts/generate-pdf-report.js && open artifacts/qoe-executive-summary.pdf"
   },
   "keywords": [
     "qoe",

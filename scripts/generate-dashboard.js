@@ -172,6 +172,29 @@ function generateDashboard() {
       font-size: 13px;
     }
 
+    .btn-pdf-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #e50914, #b20710);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-pdf-download:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(229, 9, 20, 0.6);
+      background: #f40612;
+      color: #ffffff;
+    }
+
     /* KPI Cards Grid */
     .kpi-grid {
       display: grid;
@@ -605,6 +628,9 @@ function generateDashboard() {
         <div>Platform: <strong>${report.environment.browser || 'Chromium CDP'}</strong></div>
         <div>Timestamp: <strong>${new Date(report.testRunTimestamp).toLocaleTimeString()}</strong></div>
         <div class="verdict-badge">✔ ALL ${faceoff ? '6' : '5'} SLAs PASSED</div>
+        <a href="qoe-executive-summary.pdf" download class="btn-pdf-download" title="Download Executive PDF Audit Report">
+          📥 Executive PDF Report
+        </a>
       </div>
     </header>
 
@@ -1062,6 +1088,16 @@ function generateDashboard() {
   fs.writeFileSync(DASHBOARD_PATH, htmlContent, 'utf8');
   fs.writeFileSync(PAGES_INDEX_PATH, htmlContent, 'utf8');
   console.log(`[Dashboard] Interactive QoE Analytics Dashboard compiled to: ${DASHBOARD_PATH}`);
+
+  // Automatically trigger Executive PDF export in background
+  try {
+    const { generatePdfReport } = require('./generate-pdf-report');
+    generatePdfReport().catch(err => {
+      console.warn('[Dashboard] PDF generation notice:', err.message);
+    });
+  } catch (err) {
+    // Graceful fallback if playwright is busy
+  }
 }
 
 if (require.main === module) {

@@ -493,12 +493,14 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
     expect(fs.existsSync(faceoffScreenshotPath)).toBe(true);
   });
 
-  test.afterAll(() => {
-    console.log('\n[Suite Complete] Compiling interactive visual QoE dashboard...');
+  test.afterAll(async () => {
+    console.log('\n[Suite Complete] Compiling interactive visual QoE dashboard & Executive PDF...');
     try {
       generateDashboard();
+      const { generatePdfReport } = require('../scripts/generate-pdf-report');
+      await generatePdfReport();
     } catch (err) {
-      console.error('[Dashboard Error] Failed to auto-compile dashboard:', err);
+      console.error('[Dashboard Error] Failed to auto-compile dashboard/PDF:', err);
     }
   });
 
