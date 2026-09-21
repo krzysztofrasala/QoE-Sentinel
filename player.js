@@ -129,8 +129,13 @@ class QoETelemetrySentinel {
   attachEventListeners() {
     // Shaka player error handling
     this.player.addEventListener('error', (event) => {
-      console.error('Shaka Player Error:', event.detail);
-      this.state.playbackState = 'ERROR';
+      const err = event.detail;
+      console.warn('[QoE-Sentinel] Shaka Player Event:', err);
+      // Only set fatal ERROR if severity is CRITICAL (severity 2), not RECOVERABLE (severity 1)
+      if (err && err.severity === shaka.util.Error.Severity.CRITICAL) {
+        console.error('[QoE-Sentinel] Fatal Shaka Error:', err);
+        this.state.playbackState = 'ERROR';
+      }
     });
 
     // Shaka adaptation event
