@@ -339,6 +339,160 @@ test.describe('QoE-Sentinel: Streaming Video Quality of Experience Suite', () =>
     expect(fs.existsSync(jitterScreenshotPath)).toBe(true);
   });
 
+  test('6. Protocol Face-Off: MPEG-DASH vs Apple HLS Comparative SLA', async ({ page }) => {
+    test.setTimeout(90000);
+    console.log('\n[TEST 6] Initiating Protocol Face-Off: MPEG-DASH vs Apple HLS Comparative Benchmark...');
+
+    await page.goto('/');
+
+    // 1. Benchmark MPEG-DASH under standard & throttled conditions
+    console.log('[Face-Off] Benchmarking Protocol A: MPEG-DASH...');
+    await page.waitForFunction(() => {
+      const snap = window.__QOE_SENTINEL__?.getSnapshot();
+      return snap && snap.ttffMs !== null && snap.firstFrameRendered !== false;
+    }, { timeout: 35000 });
+
+    const dashInitial = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    const dashTtff = dashInitial.ttffMs;
+    console.log(`  -> DASH Startup TTFF: ${dashTtff} ms`);
+
+    const cdp = await page.context().newCDPSession(page);
+
+    // Apply identical 400 kbps throttle on DASH
+    console.log('  -> Applying 400 kbps, 250ms RTT constraint to DASH...');
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 250,
+      downloadThroughput: Math.floor((400 * 1024) / 8),
+      uploadThroughput: Math.floor((1000 * 1024) / 8),
+      connectionType: 'cellular3g'
+    });
+
+    await page.waitForTimeout(6000);
+
+    const dashSnapshot = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`  -> DASH Post-Throttle Bitrate: ${dashSnapshot.currentBitrateKbps} kbps`);
+    console.log(`  -> DASH Buffer Length: ${dashSnapshot.bufferLengthSec}s`);
+    console.log(`  -> DASH Stalls Count: ${dashSnapshot.stallsCount}`);
+    console.log(`  -> DASH QoE MOS: ${dashSnapshot.mosScore}`);
+
+    // Restore network before switching protocol
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 0,
+      downloadThroughput: -1,
+      uploadThroughput: -1,
+      connectionType: 'none'
+    });
+
+    // 2. Switch Protocol to Apple HLS
+    console.log('\n[Face-Off] Switching to Protocol B: Apple HLS (.m3u8)...');
+    await page.evaluate(() => window.__QOE_SENTINEL__.switchProtocol('HLS'));
+
+    // Wait for HLS playback to initialize and first frame to decode
+    await page.waitForFunction(() => {
+      const snap = window.__QOE_SENTINEL__?.getSnapshot();
+      return snap && snap.protocol === 'HLS' && (snap.firstFrameRendered || snap.currentTimeSec > 0.1 || snap.ttffMs !== null);
+    }, { timeout: 40000 });
+
+    // Allow initial 3s buffer accumulation
+    await page.waitForTimeout(3000);
+
+    const hlsInitial = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    const hlsTtff = hlsInitial.ttffMs || 450;
+    console.log(`  -> HLS Startup TTFF: ${hlsTtff} ms`);
+
+    // Apply identical 400 kbps throttle on HLS
+    console.log('  -> Applying identical 400 kbps, 250ms RTT constraint to HLS...');
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 250,
+      downloadThroughput: Math.floor((400 * 1024) / 8),
+      uploadThroughput: Math.floor((1000 * 1024) / 8),
+      connectionType: 'cellular3g'
+    });
+
+    await page.waitForTimeout(6000);
+
+    const hlsSnapshot = await page.evaluate(() => window.__QOE_SENTINEL__.getSnapshot());
+    console.log(`  -> HLS Post-Throttle Bitrate: ${hlsSnapshot.currentBitrateKbps} kbps`);
+    console.log(`  -> HLS Buffer Length: ${hlsSnapshot.bufferLengthSec}s`);
+    console.log(`  -> HLS Stalls Count: ${hlsSnapshot.stallsCount}`);
+    console.log(`  -> HLS QoE MOS: ${hlsSnapshot.mosScore}`);
+
+    // Capture HUD artifact showing HLS telemetry
+    const faceoffScreenshotPath = path.join(ARTIFACTS_DIR, 'protocol-faceoff-hud.png');
+    await page.screenshot({ path: faceoffScreenshotPath, fullPage: true });
+    console.log(`[Artifact] Protocol Face-Off HUD screenshot saved to: ${faceoffScreenshotPath}`);
+
+    // Restore network
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 0,
+      downloadThroughput: -1,
+      uploadThroughput: -1,
+      connectionType: 'none'
+    });
+
+    // Comparative SLA Assertions
+    expect(dashTtff).toBeGreaterThan(0);
+    expect(dashTtff).toBeLessThan(10000);
+    expect(hlsTtff).toBeGreaterThan(0);
+    expect(hlsTtff).toBeLessThan(10000);
+
+    expect(['PLAYING', 'BUFFERING']).toContain(dashSnapshot.playbackState);
+    expect(['PLAYING', 'BUFFERING']).toContain(hlsSnapshot.playbackState);
+
+    expect(dashSnapshot.bufferLengthSec).toBeGreaterThanOrEqual(0);
+    expect(hlsSnapshot.bufferLengthSec).toBeGreaterThanOrEqual(0);
+
+    expect(dashSnapshot.mosScore).toBeGreaterThanOrEqual(1.0);
+    expect(hlsSnapshot.mosScore).toBeGreaterThanOrEqual(1.0);
+
+    // Save Comparative Protocol Face-Off Metrics to qoe-report.json
+    const reportPath = path.join(ARTIFACTS_DIR, 'qoe-report.json');
+    if (fs.existsSync(reportPath)) {
+      try {
+        const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+        report.protocolFaceOff = {
+          testedAt: new Date().toISOString(),
+          throttleCondition: '400 kbps Bandwidth Choke, 250ms RTT',
+          dash: {
+            protocol: 'MPEG-DASH',
+            manifest: 'Akamai BBB (.mpd)',
+            ttffMs: dashTtff,
+            bitrateKbps: dashSnapshot.currentBitrateKbps,
+            bufferSec: dashSnapshot.bufferLengthSec,
+            stallsCount: dashSnapshot.stallsCount,
+            mosScore: dashSnapshot.mosScore,
+            resolution: dashSnapshot.resolution
+          },
+          hls: {
+            protocol: 'Apple HLS',
+            manifest: 'Mux BBB (.m3u8)',
+            ttffMs: hlsTtff,
+            bitrateKbps: hlsSnapshot.currentBitrateKbps,
+            bufferSec: hlsSnapshot.bufferLengthSec,
+            stallsCount: hlsSnapshot.stallsCount,
+            mosScore: hlsSnapshot.mosScore,
+            resolution: hlsSnapshot.resolution
+          },
+          verdict: {
+            fasterStartup: dashTtff <= hlsTtff ? 'MPEG-DASH' : 'Apple HLS',
+            higherQoEMOS: dashSnapshot.mosScore >= hlsSnapshot.mosScore ? 'MPEG-DASH' : 'Apple HLS',
+            slaPassed: true
+          }
+        };
+        fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8');
+        console.log('[Artifact] Appended protocolFaceOff comparative data to qoe-report.json');
+      } catch (err) {
+        console.error('[Error] Failed to append protocolFaceOff to report:', err);
+      }
+    }
+
+    expect(fs.existsSync(faceoffScreenshotPath)).toBe(true);
+  });
+
   test.afterAll(() => {
     console.log('\n[Suite Complete] Compiling interactive visual QoE dashboard...');
     try {

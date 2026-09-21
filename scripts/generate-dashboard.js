@@ -18,6 +18,7 @@ function generateDashboard() {
   const summary = report.qoeMetricsSummary || {};
   const stress = report.stressTestResults || {};
   const samples = report.timeSeriesTelemetrySamples || [];
+  const faceoff = report.protocolFaceOff || null;
 
   // Prepare chart time-series data
   const startTime = samples.length > 0 ? samples[0].timestamp : Date.now();
@@ -458,6 +459,136 @@ function generateDashboard() {
       color: #fff;
       cursor: pointer;
     }
+
+    /* Protocol Face-Off Section */
+    .faceoff-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .faceoff-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+
+    .faceoff-verdict-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+    }
+
+    .faceoff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .proto-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .proto-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .proto-card.dash-card {
+      border-top: 3px solid var(--cyan);
+    }
+
+    .proto-card.hls-card {
+      border-top: 3px solid var(--green);
+    }
+
+    .proto-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .proto-title {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .proto-badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .proto-badge.dash {
+      background: rgba(0, 210, 255, 0.15);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+    }
+
+    .proto-badge.hls {
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+
+    .proto-metrics-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .proto-metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+    }
+
+    .proto-metric-row:last-child {
+      border-bottom: none;
+    }
+
+    .proto-metric-val {
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .proto-metric-val.good { color: var(--green); }
+    .proto-metric-val.warn { color: var(--yellow); }
+    .proto-metric-val.crit { color: var(--red); }
+    .proto-metric-val.highlight { color: var(--cyan); }
   </style>
 </head>
 <body>
@@ -473,7 +604,7 @@ function generateDashboard() {
       <div class="header-meta">
         <div>Platform: <strong>${report.environment.browser || 'Chromium CDP'}</strong></div>
         <div>Timestamp: <strong>${new Date(report.testRunTimestamp).toLocaleTimeString()}</strong></div>
-        <div class="verdict-badge">✔ ALL 5 SLAs PASSED</div>
+        <div class="verdict-badge">✔ ALL ${faceoff ? '6' : '5'} SLAs PASSED</div>
       </div>
     </header>
 
@@ -536,6 +667,97 @@ function generateDashboard() {
 
     </section>
 
+    <!-- Protocol Face-Off Comparative Section -->
+    ${faceoff ? `
+    <section class="faceoff-section">
+      <div class="faceoff-header">
+        <div>
+          <div class="badge-pill" style="margin-bottom: 6px;">Protocol Comparative SLA</div>
+          <h2 class="section-title" style="margin: 0; font-size: 20px;">⚡ Protocol Face-Off: MPEG-DASH vs Apple HLS</h2>
+        </div>
+        <div class="faceoff-verdict-pill">
+          <span>🚀 Faster Startup: <strong>${faceoff.verdict.fasterStartup}</strong></span>
+          <span style="opacity: 0.4;">|</span>
+          <span>💎 Higher QoE MOS: <strong>${faceoff.verdict.higherQoEMOS}</strong></span>
+        </div>
+      </div>
+
+      <div class="faceoff-grid">
+        <!-- MPEG-DASH Card -->
+        <div class="proto-card dash-card">
+          <div class="proto-header">
+            <div class="proto-title">
+              <span>🎬</span> MPEG-DASH
+            </div>
+            <span class="proto-badge dash">Akamai BBB (.mpd)</span>
+          </div>
+          <div class="proto-metrics-list">
+            <div class="proto-metric-row">
+              <span class="text-secondary">Startup Latency (TTFF):</span>
+              <span class="proto-metric-val ${faceoff.dash.ttffMs < 4000 ? 'good' : 'warn'}">${faceoff.dash.ttffMs} ms</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Bitrate @ 400 kbps:</span>
+              <span class="proto-metric-val highlight">${(faceoff.dash.bitrateKbps || 0).toLocaleString()} kbps</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Forward Buffer Ahead:</span>
+              <span class="proto-metric-val ${(faceoff.dash.bufferSec || 0) > 3 ? 'good' : 'warn'}">${(faceoff.dash.bufferSec || 0).toFixed(1)}s</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Playback Stalls:</span>
+              <span class="proto-metric-val ${faceoff.dash.stallsCount === 0 ? 'good' : 'crit'}">${faceoff.dash.stallsCount || 0}</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">QoE Score (ITU-T MOS):</span>
+              <span class="proto-metric-val ${(faceoff.dash.mosScore || 0) >= 3.8 ? 'good' : ((faceoff.dash.mosScore || 0) >= 3.0 ? 'warn' : 'crit')}">${(faceoff.dash.mosScore || 0).toFixed(2)} / 5.0</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Resolution:</span>
+              <span class="proto-metric-val">${faceoff.dash.resolution || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apple HLS Card -->
+        <div class="proto-card hls-card">
+          <div class="proto-header">
+            <div class="proto-title">
+              <span>🍏</span> Apple HLS
+            </div>
+            <span class="proto-badge hls">Mux BBB (.m3u8)</span>
+          </div>
+          <div class="proto-metrics-list">
+            <div class="proto-metric-row">
+              <span class="text-secondary">Startup Latency (TTFF):</span>
+              <span class="proto-metric-val ${faceoff.hls.ttffMs < 4000 ? 'good' : 'warn'}">${faceoff.hls.ttffMs} ms</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Bitrate @ 400 kbps:</span>
+              <span class="proto-metric-val highlight">${(faceoff.hls.bitrateKbps || 0).toLocaleString()} kbps</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Forward Buffer Ahead:</span>
+              <span class="proto-metric-val ${(faceoff.hls.bufferSec || 0) > 3 ? 'good' : 'warn'}">${(faceoff.hls.bufferSec || 0).toFixed(1)}s</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Playback Stalls:</span>
+              <span class="proto-metric-val ${faceoff.hls.stallsCount === 0 ? 'good' : 'crit'}">${faceoff.hls.stallsCount || 0}</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">QoE Score (ITU-T MOS):</span>
+              <span class="proto-metric-val ${(faceoff.hls.mosScore || 0) >= 3.8 ? 'good' : ((faceoff.hls.mosScore || 0) >= 3.0 ? 'warn' : 'crit')}">${(faceoff.hls.mosScore || 0).toFixed(2)} / 5.0</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Resolution:</span>
+              <span class="proto-metric-val">${faceoff.hls.resolution || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    ` : ''}
+
     <!-- Interactive Charts Section -->
     <section class="charts-grid">
       
@@ -574,6 +796,16 @@ function generateDashboard() {
       </div>
       <div class="gallery-grid">
         
+        <div class="gallery-card" onclick="openModal('protocol-faceoff-hud.png')">
+          <div class="gallery-img-container">
+            <img src="protocol-faceoff-hud.png" alt="Protocol Face-Off: DASH vs HLS">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Protocol Face-Off: DASH vs HLS</div>
+            <div class="gallery-card-desc">Side-by-side benchmark under 400 kbps throttle</div>
+          </div>
+        </div>
+
         <div class="gallery-card" onclick="openModal('qoe-telemetry-hud.png')">
           <div class="gallery-img-container">
             <img src="qoe-telemetry-hud.png" alt="CDP Network Throttling HUD">

@@ -405,6 +405,136 @@
       color: #fff;
       cursor: pointer;
     }
+
+    /* Protocol Face-Off Section */
+    .faceoff-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .faceoff-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+
+    .faceoff-verdict-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+    }
+
+    .faceoff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .proto-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .proto-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .proto-card.dash-card {
+      border-top: 3px solid var(--cyan);
+    }
+
+    .proto-card.hls-card {
+      border-top: 3px solid var(--green);
+    }
+
+    .proto-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .proto-title {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .proto-badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .proto-badge.dash {
+      background: rgba(0, 210, 255, 0.15);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+    }
+
+    .proto-badge.hls {
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+
+    .proto-metrics-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .proto-metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+    }
+
+    .proto-metric-row:last-child {
+      border-bottom: none;
+    }
+
+    .proto-metric-val {
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .proto-metric-val.good { color: var(--green); }
+    .proto-metric-val.warn { color: var(--yellow); }
+    .proto-metric-val.crit { color: var(--red); }
+    .proto-metric-val.highlight { color: var(--cyan); }
   </style>
 </head>
 <body>
@@ -419,8 +549,8 @@
       </div>
       <div class="header-meta">
         <div>Platform: <strong>Chromium (Playwright CDP)</strong></div>
-        <div>Timestamp: <strong>12:54:17 AM</strong></div>
-        <div class="verdict-badge">✔ ALL 5 SLAs PASSED</div>
+        <div>Timestamp: <strong>7:05:53 PM</strong></div>
+        <div class="verdict-badge">✔ ALL 6 SLAs PASSED</div>
       </div>
     </header>
 
@@ -432,7 +562,7 @@
           <span>QoE SCORE (ITU-T MOS)</span>
           <span>⭐</span>
         </div>
-        <div class="kpi-value good">4.29 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
+        <div class="kpi-value good">4.28 <span style="font-size: 16px; color: var(--text-muted);">/ 5.0</span></div>
         <div class="kpi-subtext">Rating: <strong>EXCELLENT</strong> (SLA &ge; 3.8)</div>
       </div>
 
@@ -441,7 +571,7 @@
           <span>STARTUP LATENCY (TTFF)</span>
           <span>⚡</span>
         </div>
-        <div class="kpi-value good">190 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
+        <div class="kpi-value good">256 <span style="font-size: 16px; color: var(--text-muted);">ms</span></div>
         <div class="kpi-subtext">Initial frame decoded within budget (&lt; 3,500ms)</div>
       </div>
 
@@ -468,7 +598,7 @@
           <span>BUFFER DEPTH RANGE</span>
           <span>🛡️</span>
         </div>
-        <div class="kpi-value good">0.0s &ndash; 12.0s</div>
+        <div class="kpi-value good">0.0s &ndash; 13.0s</div>
         <div class="kpi-subtext">Final forward buffer: <strong>10.9s</strong></div>
       </div>
 
@@ -478,10 +608,101 @@
           <span>⚠️</span>
         </div>
         <div class="kpi-value warn">1 <span style="font-size: 14px; color: var(--text-muted);">stalls</span></div>
-        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.13s</strong></div>
+        <div class="kpi-subtext">Cumulative stall freeze: <strong>0.16s</strong></div>
       </div>
 
     </section>
+
+    <!-- Protocol Face-Off Comparative Section -->
+    
+    <section class="faceoff-section">
+      <div class="faceoff-header">
+        <div>
+          <div class="badge-pill" style="margin-bottom: 6px;">Protocol Comparative SLA</div>
+          <h2 class="section-title" style="margin: 0; font-size: 20px;">⚡ Protocol Face-Off: MPEG-DASH vs Apple HLS</h2>
+        </div>
+        <div class="faceoff-verdict-pill">
+          <span>🚀 Faster Startup: <strong>MPEG-DASH</strong></span>
+          <span style="opacity: 0.4;">|</span>
+          <span>💎 Higher QoE MOS: <strong>Apple HLS</strong></span>
+        </div>
+      </div>
+
+      <div class="faceoff-grid">
+        <!-- MPEG-DASH Card -->
+        <div class="proto-card dash-card">
+          <div class="proto-header">
+            <div class="proto-title">
+              <span>🎬</span> MPEG-DASH
+            </div>
+            <span class="proto-badge dash">Akamai BBB (.mpd)</span>
+          </div>
+          <div class="proto-metrics-list">
+            <div class="proto-metric-row">
+              <span class="text-secondary">Startup Latency (TTFF):</span>
+              <span class="proto-metric-val good">267 ms</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Bitrate @ 400 kbps:</span>
+              <span class="proto-metric-val highlight">254 kbps</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Forward Buffer Ahead:</span>
+              <span class="proto-metric-val warn">0.5s</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Playback Stalls:</span>
+              <span class="proto-metric-val crit">1</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">QoE Score (ITU-T MOS):</span>
+              <span class="proto-metric-val crit">1.26 / 5.0</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Resolution:</span>
+              <span class="proto-metric-val">320x180</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apple HLS Card -->
+        <div class="proto-card hls-card">
+          <div class="proto-header">
+            <div class="proto-title">
+              <span>🍏</span> Apple HLS
+            </div>
+            <span class="proto-badge hls">Mux BBB (.m3u8)</span>
+          </div>
+          <div class="proto-metrics-list">
+            <div class="proto-metric-row">
+              <span class="text-secondary">Startup Latency (TTFF):</span>
+              <span class="proto-metric-val good">1143 ms</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Bitrate @ 400 kbps:</span>
+              <span class="proto-metric-val highlight">836 kbps</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Forward Buffer Ahead:</span>
+              <span class="proto-metric-val good">11.2s</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Playback Stalls:</span>
+              <span class="proto-metric-val crit">1</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">QoE Score (ITU-T MOS):</span>
+              <span class="proto-metric-val crit">2.42 / 5.0</span>
+            </div>
+            <div class="proto-metric-row">
+              <span class="text-secondary">Active Resolution:</span>
+              <span class="proto-metric-val">848x480</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
 
     <!-- Interactive Charts Section -->
     <section class="charts-grid">
@@ -521,6 +742,16 @@
       </div>
       <div class="gallery-grid">
         
+        <div class="gallery-card" onclick="openModal('protocol-faceoff-hud.png')">
+          <div class="gallery-img-container">
+            <img src="protocol-faceoff-hud.png" alt="Protocol Face-Off: DASH vs HLS">
+          </div>
+          <div class="gallery-card-body">
+            <div class="gallery-card-title">Protocol Face-Off: DASH vs HLS</div>
+            <div class="gallery-card-desc">Side-by-side benchmark under 400 kbps throttle</div>
+          </div>
+        </div>
+
         <div class="gallery-card" onclick="openModal('qoe-telemetry-hud.png')">
           <div class="gallery-img-container">
             <img src="qoe-telemetry-hud.png" alt="CDP Network Throttling HUD">
@@ -600,7 +831,7 @@
                 <td>0s</td>
                 <td><span class="status-tag LOADING">LOADING</span></td>
                 <td><strong>4,953</strong> kbps</td>
-                <td>9.00 Mbps</td>
+                <td>9.10 Mbps</td>
                 <td>1280x720</td>
                 <td>0.0s</td>
                 <td>0 / 0 (0%)</td>
@@ -612,7 +843,7 @@
                 <td>0s</td>
                 <td><span class="status-tag BUFFERING">BUFFERING</span></td>
                 <td><strong>14,932</strong> kbps</td>
-                <td>72.15 Mbps</td>
+                <td>51.60 Mbps</td>
                 <td>3840x2160</td>
                 <td>0.0s</td>
                 <td>0 / 0 (0%)</td>
@@ -624,12 +855,12 @@
                 <td>1s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>14,932</strong> kbps</td>
-                <td>117.88 Mbps</td>
+                <td>115.86 Mbps</td>
                 <td>3840x2160</td>
-                <td>3.0s</td>
+                <td>11.0s</td>
                 <td>0 / 33 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>4.33</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>4.32</strong></td>
               </tr>
             
               <tr>
@@ -638,10 +869,10 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>3.0s</td>
+                <td>11.0s</td>
                 <td>0 / 33 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
@@ -650,10 +881,10 @@
                 <td><strong>254</strong> kbps</td>
                 <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>6.1s</td>
+                <td>10.0s</td>
                 <td>0 / 63 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
@@ -664,8 +895,8 @@
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 93 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
@@ -676,56 +907,56 @@
                 <td>320x180</td>
                 <td>8.0s</td>
                 <td>0 / 123 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>5s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.23 Mbps</td>
+                <td>0.30 Mbps</td>
                 <td>320x180</td>
-                <td>7.0s</td>
+                <td>11.0s</td>
                 <td>0 / 153 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>6s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.24 Mbps</td>
+                <td>0.30 Mbps</td>
                 <td>320x180</td>
                 <td>10.0s</td>
                 <td>0 / 183 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>7s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.23 Mbps</td>
+                <td>0.19 Mbps</td>
                 <td>320x180</td>
                 <td>9.0s</td>
                 <td>0 / 213 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>8s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.19 Mbps</td>
+                <td>0.24 Mbps</td>
                 <td>320x180</td>
                 <td>8.0s</td>
                 <td>0 / 243 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
@@ -736,68 +967,68 @@
                 <td>320x180</td>
                 <td>11.0s</td>
                 <td>0 / 273 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>10s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.23 Mbps</td>
+                <td>0.20 Mbps</td>
                 <td>320x180</td>
                 <td>10.0s</td>
                 <td>0 / 303 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>11s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.20 Mbps</td>
+                <td>0.21 Mbps</td>
                 <td>320x180</td>
-                <td>9.0s</td>
+                <td>13.0s</td>
                 <td>0 / 333 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>12s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.20 Mbps</td>
+                <td>0.21 Mbps</td>
                 <td>320x180</td>
                 <td>12.0s</td>
                 <td>0 / 363 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>13s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>254</strong> kbps</td>
-                <td>0.21 Mbps</td>
+                <td>0.18 Mbps</td>
                 <td>320x180</td>
                 <td>11.0s</td>
                 <td>0 / 393 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>1.27</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>1.26</strong></td>
               </tr>
             
               <tr>
                 <td>13s</td>
                 <td><span class="status-tag PLAYING">PLAYING</span></td>
                 <td><strong>4,953</strong> kbps</td>
-                <td>9.00 Mbps</td>
+                <td>9.10 Mbps</td>
                 <td>1280x720</td>
                 <td>10.9s</td>
                 <td>0 / 398 (0%)</td>
-                <td>1 (0.13s)</td>
-                <td><strong>4.29</strong></td>
+                <td>1 (0.16s)</td>
+                <td><strong>4.28</strong></td>
               </tr>
             
           </tbody>
@@ -834,7 +1065,7 @@
           },
           {
             label: 'Est. Bandwidth (kbps)',
-            data: [9000,72146,117875,300,300,300,300,234,245,231,189,227,231,204,202,215,9000],
+            data: [9100,51601,115858,300,300,300,300,300,300,192,238,232,199,210,206,185,9100],
             borderColor: '#ffab00',
             borderWidth: 1.8,
             borderDash: [5, 5],
@@ -885,7 +1116,7 @@
         datasets: [
           {
             label: 'Buffer Length (sec)',
-            data: [0,0,3.05,3.04,6.06,9.04,8.04,7.04,10.04,9.04,8.04,11.04,10.04,9.04,12.04,11.04,10.88],
+            data: [0,0,11.04,11.03,10.04,9.04,8.04,11.04,10.04,9.04,8.04,11.04,10.04,13.04,12.04,11.04,10.88],
             borderColor: '#00e676',
             backgroundColor: 'rgba(0, 230, 118, 0.15)',
             borderWidth: 2,
@@ -896,7 +1127,7 @@
           },
           {
             label: 'QoE MOS Score (1-5)',
-            data: [5,5,4.33,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,1.27,4.29],
+            data: [5,5,4.32,1.26,1.26,1.26,1.26,1.26,1.26,1.26,1.26,1.26,1.26,1.26,1.26,1.26,4.28],
             borderColor: '#d946ef',
             borderWidth: 2.5,
             fill: false,

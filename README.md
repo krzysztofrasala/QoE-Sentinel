@@ -83,9 +83,13 @@ flowchart LR
    - Algorithmic viewer satisfaction model computing a normalized QoE score (1.0 – 5.0).
    - Factors in base video encoding quality, TTFF startup latency penalties, stall frequency/duration weights, and ABR switching instability.
 
-9. **Automated Artifacts Generation & Visual Analytics Dashboard**
+9. **Protocol Face-Off: MPEG-DASH vs Apple HLS Comparative SLA**
+   - Head-to-head performance shootout running identical network throttling constraints (400 kbps, 250ms RTT) across both protocols.
+   - Evaluates startup latency (TTFF), throttled variant adaptation, buffer retention, and final MOS rating between DASH and HLS.
+
+10. **Automated Artifacts Generation & Visual Analytics Dashboard**
    - Generates structured, timestamped JSON reports to `/artifacts/qoe-report.json`.
-   - Compiles a standalone dark-mode interactive HTML analytics dashboard (`dashboard.html`) powered by Chart.js time-series plots.
+   - Compiles a standalone dark-mode interactive HTML analytics dashboard (`dashboard.html`) powered by Chart.js time-series plots and comparative cards.
    - Captures high-resolution visual screenshots of the telemetry HUD under stress into `/artifacts/`.
 
 ---
@@ -103,6 +107,7 @@ flowchart LR
 | **Dropped Frame Ratio** | Ratio of dropped video frames to total decoded frames (`getVideoPlaybackQuality`). | `< 1.0 %` |
 | **Stalls & Rebuffering** | Count of playback interruptions and accumulated freeze time (excluding intentional seeks). | `0 unexpected stalls` |
 | **ABR Adaptation Speed** | Time taken by player to downswitch or upswitch representations upon throughput shifts. | `< 15.0 s` |
+| **Multi-Protocol SLA** | Comparative parity verification between MPEG-DASH and Apple HLS under bandwidth choke. | Both TTFF `< 10s` & MOS `≥ 1.0` |
 
 ---
 
@@ -112,7 +117,9 @@ flowchart LR
 QoE-Sentinel/
 ├── artifacts/                     # Generated test reports & screenshots
 │   ├── dashboard.html             # Standalone interactive Chart.js analytics dashboard
+│   ├── index.html                 # Direct GitHub Pages entrypoint
 │   ├── qoe-report.json            # Machine-readable QoE benchmark metrics
+│   ├── protocol-faceoff-hud.png   # DASH vs HLS comparative benchmark HUD
 │   ├── qoe-telemetry-hud.png      # High-res screenshot of live Stats for Nerds HUD
 │   ├── baseline-playback-hud.png  # Baseline playback verification screenshot
 │   ├── seek-hell-recovery-hud.png # Stress test recovery screenshot
@@ -121,7 +128,7 @@ QoE-Sentinel/
 ├── scripts/
 │   └── generate-dashboard.js      # Analytics dashboard HTML generator
 ├── tests/
-│   └── qoe-streaming.spec.js      # Playwright E2E QoE test suite
+│   └── qoe-streaming.spec.js      # Playwright E2E QoE 6-test suite
 ├── index.html                     # HTML5 streaming test stage with Shaka Player
 ├── player.js                      # QoE telemetry engine & Shaka Player logic
 ├── styles.css                     # Dark-mode streaming dashboard & HUD styles

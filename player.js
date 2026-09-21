@@ -4,6 +4,7 @@
  */
 
 const DEFAULT_DASH_MANIFEST = 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd';
+const DEFAULT_HLS_MANIFEST = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
 
 class QoETelemetrySentinel {
   constructor() {
@@ -13,6 +14,7 @@ class QoETelemetrySentinel {
 
     // QoE Telemetry State
     this.state = {
+      protocol: 'DASH', // 'DASH' | 'HLS'
       manifestUrl: DEFAULT_DASH_MANIFEST,
       loadStartTime: null,
       ttffMs: null,
@@ -166,8 +168,6 @@ class QoETelemetrySentinel {
           const now = performance.now();
           this.state.ttffMs = Math.round(now - this.state.loadStartTime);
           this.state.firstFrameRendered = true;
-          this.videoElement.removeEventListener('timeupdate', detectFirstFrame);
-          this.videoElement.removeEventListener('loadeddata', detectFirstFrame);
           console.log(`[QoE-Sentinel] TTFF captured: ${this.state.ttffMs} ms`);
         }
       }
@@ -188,17 +188,79 @@ class QoETelemetrySentinel {
     }
   }
 
+  async switchProtocol(protocol) {
+    const target = (protocol || '').toUpperCase();
+    if (target !== 'DASH' && target !== 'HLS') {
+      console.warn(`[QoE-Sentinel] Unsupported protocol: ${protocol}`);
+      return;
+    }
+    const manifestUrl = target === 'HLS' ? DEFAULT_HLS_MANIFEST : DEFAULT_DASH_MANIFEST;
+    console.log(`[QoE-Sentinel] Switching protocol to ${target}: ${manifestUrl}`);
+    this.state.protocol = target;
+
+    // Reset performance metrics for the fresh stream evaluation
+    this.state.stallsCount = 0;
+    this.state.totalStallDurationMs = 0;
+    this.state.stallStartTime = null;
+    this.state.lastStallDurationMs = 0;
+    this.state.recoveryCount = 0;
+    this.state.adaptationCount = 0;
+    this.state.switchHistory = [];
+    this.state.abrStabilityIndex = 100;
+    this.state.mosScore = 5.0;
+    this.state.history = [];
+    this.state.droppedFrames = 0;
+    this.state.totalFrames = 0;
+    this.state.dropRatioPercent = 0;
+
+    await this.loadStream(manifestUrl);
+    this.updateProtocolUI();
+  }
+
+  updateProtocolUI() {
+    const isHls = this.state.protocol === 'HLS';
+    const headerProtocol = document.getElementById('header-stream-protocol');
+    if (headerProtocol) {
+      headerProtocol.textContent = isHls ? 'HLS / ABR Active' : 'DASH / ABR Active';
+    }
+
+    const streamLabel = document.getElementById('stream-label');
+    if (streamLabel) {
+      streamLabel.textContent = isHls 
+        ? 'Stream: Apple HLS Multi-bitrate (Mux BBB)' 
+        : 'Stream: Akamai BBB DASH Multi-bitrate';
+    }
+
+    const btnDash = document.getElementById('btn-proto-dash');
+    const btnHls = document.getElementById('btn-proto-hls');
+    if (btnDash && btnHls) {
+      if (isHls) {
+        btnDash.classList.remove('active', 'btn-primary');
+        btnHls.classList.add('active', 'btn-primary');
+      } else {
+        btnHls.classList.remove('active', 'btn-primary');
+        btnDash.classList.add('active', 'btn-primary');
+      }
+    }
+  }
+
   async loadStream(manifestUrl) {
     this.state.manifestUrl = manifestUrl;
+    if (manifestUrl && manifestUrl.includes('.m3u8')) {
+      this.state.protocol = 'HLS';
+    } else {
+      this.state.protocol = 'DASH';
+    }
     this.state.loadStartTime = performance.now();
     this.state.firstFrameRendered = false;
     this.state.ttffMs = null;
     this.state.playbackState = 'LOADING';
     this.updateUI();
+    this.updateProtocolUI();
 
     try {
       await this.player.load(manifestUrl);
-      console.log('[QoE-Sentinel] DASH Manifest loaded successfully');
+      console.log(`[QoE-Sentinel] ${this.state.protocol} Manifest loaded successfully`);
       
       // Auto-play unmuted (or muted if browser policy requires)
       try {
@@ -358,6 +420,7 @@ class QoETelemetrySentinel {
 
   getSnapshot() {
     return {
+      protocol: this.state.protocol,
       manifestUrl: this.state.manifestUrl,
       playbackState: this.state.playbackState,
       firstFrameRendered: this.state.firstFrameRendered,
@@ -471,6 +534,7 @@ window.addEventListener('DOMContentLoaded', () => {
     seekTo: (sec) => window.sentinel.seek(sec),
     toggleHud: () => window.sentinel.toggleHud(),
     loadStream: (url) => window.sentinel.loadStream(url),
+    switchProtocol: (proto) => window.sentinel.switchProtocol(proto),
     player: () => window.sentinel.player,
     video: () => window.sentinel.videoElement
   };
@@ -492,6 +556,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const randomTime = Math.floor(Math.random() * 200) + 10;
       window.sentinel.seek(randomTime);
     });
+  }
+
+  // Protocol switcher buttons
+  const btnDash = document.getElementById('btn-proto-dash');
+  if (btnDash) {
+    btnDash.addEventListener('click', () => window.sentinel.switchProtocol('DASH'));
+  }
+
+  const btnHls = document.getElementById('btn-proto-hls');
+  if (btnHls) {
+    btnHls.addEventListener('click', () => window.sentinel.switchProtocol('HLS'));
   }
 
   // Keyboard shortcut 'S' for HUD
